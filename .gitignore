@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Project data / outputs
+data/audios/*
+!data/audios/.gitkeep
+output/*
+!output/.gitkeep
+
+# Env
+.env
