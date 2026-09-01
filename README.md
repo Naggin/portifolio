@@ -61,7 +61,7 @@ PYTHONPATH=src python src/detect.py data/audios/
 | Flag | Meaning |
 | --- | --- |
 | `--config` | Load band/threshold from a calibration JSON (`output/calibration.json`). |
-| `--lowcut` / `--highcut` | Band-pass limits in Hz (default 1500–4000). |
+| `--lowcut` / `--highcut` | Band-pass limits in Hz (default 1900–3650, calibrated). |
 | `--threshold-k` | Detection sensitivity (median + k·MAD of band energy). |
 | `--no-spectrogram` | Skip PNG rendering (faster batch runs). |
 | `--output-dir` | Where to write outputs (default `output/`). |
@@ -95,10 +95,12 @@ output/               # generated artifacts (git-ignored)
 
 ## Calibration (Phase 2)
 
-The defaults in `src/bioacoustics/config.py` target small Atlantic-forest hylids.
-With a clean reference recording of the species, `src/calibrate.py` measures where
-the call energy actually sits and recommends `lowcut_hz`/`highcut_hz` (tight around
-the real call band) and a starting `threshold_k`, so wind never becomes a false
+The defaults in `src/bioacoustics/config.py` are **calibrated to a clean
+*S. caramaschii* reference** (`CEAES 2.m4a`): its call energy peaks at ~2.9 kHz and
+concentrates in ~2.2–3.2 kHz, so the band-pass is set to **1900–3650 Hz** (was a
+generic 1500–4000 Hz before calibration). `src/calibrate.py` measures where the
+call energy actually sits and recommends `lowcut_hz`/`highcut_hz` (tight around the
+real call band) and a starting `threshold_k`, so wind never becomes a false
 positive.
 
 ```bash
@@ -125,7 +127,7 @@ wind can never anchor the recommended band.
 
 - [x] **Phase 0** — environment + dependencies
 - [x] **Phase 1** — core detection pipeline (this repo)
-- [~] **Phase 2** — calibration tooling (`src/calibrate.py`) built & tested; awaiting the real species reference
+- [x] **Phase 2** — calibration tooling (`src/calibrate.py`) built & tested; defaults calibrated to the real `S. caramaschii` reference (band 1900–3650 Hz, peak ~2.9 kHz)
 - [ ] **Phase 3** — Claude API validation of ambiguous chunks (`anthropic` already vendored)
 - [ ] **Phase 4** — batch processing across all folders
 - [ ] **Phase 5** — React + Vite dashboard
