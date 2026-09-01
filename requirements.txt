@@ -1,0 +1,9 @@
+librosa>=0.10.2
+numpy>=1.26
+scipy>=1.11
+noisereduce>=3.0
+matplotlib>=3.8
+openpyxl>=3.1
+soundfile>=0.12
+anthropic>=0.39
+pytest>=8.0
