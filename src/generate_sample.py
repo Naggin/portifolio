@@ -56,8 +56,8 @@ def synthesize(sr: int = 22_050, duration_s: float = 30.0, seed: int = 42) -> np
         place(center, 0.25, 2600, 2800, 0.5)
 
     # --- Overlap: A + a second individual B (~3.3 kHz) around 15-16 s ---
-    place(15.0, 0.25, 2600, 2800, 0.5)   # individual A
-    place(15.1, 0.25, 3200, 3400, 0.45)  # individual B (different pitch)
+    place(15.0, 0.25, 2600, 2750, 0.5)   # individual A (~2.7 kHz, species-like)
+    place(15.1, 0.25, 3050, 3180, 0.45)  # individual B (~3.1 kHz, still in-band)
 
     # Normalize to avoid clipping.
     peak = float(np.max(np.abs(audio))) or 1.0

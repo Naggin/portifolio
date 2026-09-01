@@ -60,7 +60,7 @@ PYTHONPATH=src python src/detect.py data/audios/
 
 | Flag | Meaning |
 | --- | --- |
-| `--lowcut` / `--highcut` | Band-pass limits in Hz (default 1500–4000). |
+| `--lowcut` / `--highcut` | Band-pass limits in Hz (default 2600–3200). |
 | `--threshold-k` | Detection sensitivity (median + k·MAD of band energy). |
 | `--no-spectrogram` | Skip PNG rendering (faster batch runs). |
 | `--output-dir` | Where to write outputs (default `output/`). |
@@ -94,18 +94,25 @@ output/               # generated artifacts (git-ignored)
 
 ## Calibration (Phase 2)
 
-The defaults in `src/bioacoustics/config.py` target small Atlantic-forest hylids.
-With a clean reference recording of the species, tune `lowcut_hz`/`highcut_hz` to the
-real call band and `threshold_k` so wind never becomes a false positive.
+Defaults in `src/bioacoustics/config.py` were tuned on the clean species
+reference `Áudio base/CEAES 2.m4a` (Drive): advertisement energy peaks near
+**2.89 kHz** (voiced frames ~2.63–3.09 kHz). The detector band is **2.6–3.2 kHz**
+so pond wind and 5–8 kHz harmonics are ignored. Simultaneous-caller spacing is
+400 Hz — the uncalibrated settings counted seven “individuals” on that
+single-species clip because they treated the 2.9 kHz ridge as many peaks.
+
+Field folders on the shared Drive are hour-scale `RYYYYMMDD-HHMMSS.WAV` files
+(and some multi-hour MP3s). Skip `15/08 açude 2 (esse nao precisa)`. Long
+files are processed in 60 s overlapping chunks so they are never loaded whole.
 
 ## Roadmap status
 
 - [x] **Phase 0** — environment + dependencies
 - [x] **Phase 1** — core detection pipeline (this repo)
-- [ ] **Phase 2** — calibration with a clean species reference
+- [x] **Phase 2** — calibration with a clean species reference (`CEAES 2`)
 - [ ] **Phase 3** — Claude API validation of ambiguous chunks (`anthropic` already vendored)
-- [ ] **Phase 4** — batch processing across all folders
-- [ ] **Phase 5** — React + Vite dashboard
+- [x] **Phase 4** — chunked processing of hour-scale files (folder batch still via CLI)
+- [x] **Phase 5** — React + Vite dashboard
 
 ## Dashboard API
 
@@ -113,7 +120,7 @@ real call band and `threshold_k` so wind never becomes a false positive.
 PYTHONPATH=src python -m bioacoustics.api   # http://127.0.0.1:8000
 ```
 
-`GET /api/report` serves `output/resultado.json`. `POST /api/analyze` accepts multipart audio (`files` or `file`; `.wav`/`.flac`/`.ogg`/`.mp3`, max 10 files, 500 MB each), runs the pipeline, and writes the same JSON/xlsx reports. `GET /api/limits` returns those caps. Vite proxies `/api` to this server.
+`GET /api/report` serves `output/resultado.json`. `POST /api/analyze` accepts multipart audio (`files` or `file`; `.wav`/`.flac`/`.ogg`/`.mp3`/`.m4a`, max 10 files, 2 GB each), runs the pipeline in 60 s chunks for long files, and writes the same JSON/xlsx reports. `GET /api/limits` returns those caps. Vite proxies `/api` to this server.
 
 ## Testing
 

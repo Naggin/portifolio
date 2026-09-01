@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")  # headless rendering
 import matplotlib.pyplot as plt  # noqa: E402
@@ -27,7 +28,9 @@ def save_spectrogram(
         2, 1, figsize=(12, 7), sharex=True, gridspec_kw={"height_ratios": [3, 1]}
     )
 
-    extent = [result.times[0], result.times[-1], result.freqs[0], result.freqs[-1]]
+    spec_times = result.preview_times if result.preview_times is not None else result.times
+    t0, t1 = float(spec_times[0]), float(spec_times[-1])
+    extent = [t0, t1, result.freqs[0], result.freqs[-1]]
     ax_spec.imshow(
         result.spectrogram_db,
         aspect="auto",
@@ -43,15 +46,21 @@ def save_spectrogram(
     ax_spec.set_ylabel("Frequency (Hz)")
     ax_spec.set_title(title)
 
-    for ev in result.events:
+    visible = [ev for ev in result.events if t0 <= ev.peak_time_s <= t1]
+    for ev in visible:
         ax_spec.plot(ev.peak_time_s, ev.peak_freq_hz, "o", color="lime", ms=6, mew=1.2,
                      markerfacecolor="none")
         ax_spec.axvspan(ev.start_s, ev.end_s, color="lime", alpha=0.08)
 
-    ax_energy.plot(result.times, result.band_energy, color="steelblue", lw=0.8,
+    # Energy trace: same window as the spectrogram so sharex stays readable
+    # on multi-hour files (full-file energy still goes into the JSON report).
+    mask = (result.times >= t0) & (result.times <= t1)
+    if not np.any(mask):
+        mask = np.ones(len(result.times), dtype=bool)
+    ax_energy.plot(result.times[mask], result.band_energy[mask], color="steelblue", lw=0.8,
                    label="Band energy")
     ax_energy.axhline(result.threshold, color="red", ls="--", lw=1.0, label="Threshold")
-    for ev in result.events:
+    for ev in visible:
         ax_energy.axvline(ev.peak_time_s, color="lime", lw=0.6, alpha=0.6)
     ax_energy.set_xlabel("Time (s)")
     ax_energy.set_ylabel("Energy")

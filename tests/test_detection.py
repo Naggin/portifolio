@@ -8,6 +8,7 @@ counted as two simultaneous callers.
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from bioacoustics.config import DetectionConfig
 from bioacoustics.detection import run_detection
@@ -63,3 +64,32 @@ def test_no_false_positive_on_pure_wind():
     wind += 0.01 * rng.standard_normal(n)
     result = run_detection(wind.astype(np.float32), cfg)
     assert result.n_events == 0
+
+
+def test_chunked_processing_matches_full_file(tmp_path):
+    """Hour-scale files are split; event count must match a single-pass run."""
+    import soundfile as sf
+
+    from bioacoustics.pipeline import process_file
+    from generate_sample import synthesize
+
+    cfg = DetectionConfig(
+        chunk_duration_s=12.0,
+        chunk_overlap_s=3.0,
+        edge_guard_s=1.5,
+        use_noise_reduction=False,
+    )
+    audio = synthesize(sr=cfg.sample_rate, duration_s=30.0, seed=42)
+    path = tmp_path / "R20241011-180923.WAV"
+    sf.write(str(path), audio, cfg.sample_rate, subtype="PCM_16")
+
+    full_cfg = DetectionConfig(chunk_duration_s=1_000.0, use_noise_reduction=False)
+    full = process_file(path, full_cfg)
+    chunked = process_file(path, cfg)
+    assert chunked.detection.n_events == full.detection.n_events
+    assert chunked.detection.duration_s == pytest.approx(full.detection.duration_s, rel=0.02)
+    full_peaks = sorted(e.peak_time_s for e in full.detection.events)
+    chunk_peaks = sorted(e.peak_time_s for e in chunked.detection.events)
+    for got, exp in zip(chunk_peaks, full_peaks):
+        assert abs(got - exp) < 0.3
+
