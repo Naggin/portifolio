@@ -60,6 +60,7 @@ PYTHONPATH=src python src/detect.py data/audios/
 
 | Flag | Meaning |
 | --- | --- |
+| `--config` | Load band/threshold from a calibration JSON (`output/calibration.json`). |
 | `--lowcut` / `--highcut` | Band-pass limits in Hz (default 1500–4000). |
 | `--threshold-k` | Detection sensitivity (median + k·MAD of band energy). |
 | `--no-spectrogram` | Skip PNG rendering (faster batch runs). |
@@ -83,8 +84,10 @@ src/
     visualization.py  # spectrogram PNG for human validation
     report.py         # .xlsx report with hourly/monthly charts
     pipeline.py       # single-file orchestration
+    calibration.py    # Phase 2: measure call band + recommend config
   generate_sample.py  # synthetic test-audio generator
-  detect.py           # CLI entrypoint
+  detect.py           # CLI entrypoint (--config loads calibration output)
+  calibrate.py        # Phase 2 calibration CLI
 tests/                # pipeline sanity tests
 data/audios/          # put real recordings here (git-ignored)
 output/               # generated artifacts (git-ignored)
@@ -93,14 +96,36 @@ output/               # generated artifacts (git-ignored)
 ## Calibration (Phase 2)
 
 The defaults in `src/bioacoustics/config.py` target small Atlantic-forest hylids.
-With a clean reference recording of the species, tune `lowcut_hz`/`highcut_hz` to the
-real call band and `threshold_k` so wind never becomes a false positive.
+With a clean reference recording of the species, `src/calibrate.py` measures where
+the call energy actually sits and recommends `lowcut_hz`/`highcut_hz` (tight around
+the real call band) and a starting `threshold_k`, so wind never becomes a false
+positive.
+
+```bash
+# Reference can be .m4a, .wav, .flac, .ogg, or .mp3 (m4a decoded via ffmpeg).
+PYTHONPATH=src python src/calibrate.py "data/audios/CEAES 2.m4a"
+```
+
+It writes:
+
+- `output/calibration_reference_band.png` — reference spectrogram + mean power
+  spectrum with the recommended band and peak frequency marked (human validation).
+- `output/calibration.json` — the recommended `DetectionConfig` values.
+
+Feed the result straight into detection (explicit flags still override it):
+
+```bash
+PYTHONPATH=src python src/detect.py --config output/calibration.json data/audios/
+```
+
+The band search ignores frequencies below `--wind-floor` (default 300 Hz) so
+wind can never anchor the recommended band.
 
 ## Roadmap status
 
 - [x] **Phase 0** — environment + dependencies
 - [x] **Phase 1** — core detection pipeline (this repo)
-- [ ] **Phase 2** — calibration with a clean species reference
+- [~] **Phase 2** — calibration tooling (`src/calibrate.py`) built & tested; awaiting the real species reference
 - [ ] **Phase 3** — Claude API validation of ambiguous chunks (`anthropic` already vendored)
 - [ ] **Phase 4** — batch processing across all folders
 - [ ] **Phase 5** — React + Vite dashboard
