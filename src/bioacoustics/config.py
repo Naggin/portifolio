@@ -1,8 +1,11 @@
 """Detection parameters for the acoustic pipeline.
 
-Defaults target the calling range of small Atlantic-forest hylids
-(Sphaenorhynchus caramaschii). They are meant to be tuned in Phase 2 using a
-clean reference recording of the species.
+Defaults target the calling range of *Sphaenorhynchus caramaschii*. The band-pass
+edges were calibrated in Phase 2 from a clean species reference (``CEAES 2.m4a``):
+its call energy peaks at ~2.9 kHz and concentrates in ~2.2–3.2 kHz, so the band
+is set tighter than the original generic hylid guess. See ``src/calibrate.py``;
+per-recording overrides can be loaded from ``output/calibration.json`` via
+``DetectionConfig.from_json`` / ``detect.py --config``.
 """
 
 from __future__ import annotations
@@ -18,8 +21,10 @@ class DetectionConfig:
     sample_rate: int = 22_050  # Hz; downsampled on load to keep processing light.
 
     # --- Band-pass filter (removes wind, which is low-frequency energy) ---
-    lowcut_hz: float = 1_500.0
-    highcut_hz: float = 4_000.0
+    # Calibrated to the S. caramaschii reference (peak ~2.9 kHz, band ~2.2–3.2 kHz)
+    # with margin. Was 1500–4000 (generic hylid guess) before Phase 2 calibration.
+    lowcut_hz: float = 1_900.0
+    highcut_hz: float = 3_650.0
     filter_order: int = 4
 
     # --- Spectrogram (STFT) ---
