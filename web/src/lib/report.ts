@@ -8,10 +8,21 @@ export type LoadedReport = {
   spectrogramUrl: (filename: string) => string
 }
 
-function isReport(value: unknown): value is DetectionReport {
+export function isReport(value: unknown): value is DetectionReport {
   if (!value || typeof value !== 'object') return false
   const report = value as DetectionReport
   return Array.isArray(report.files) && Array.isArray(report.events) && Boolean(report.summary)
+}
+
+export function asDetectionReport(value: unknown): DetectionReport {
+  if (!isReport(value)) {
+    throw new Error('O relatório JSON está em um formato inesperado.')
+  }
+  return value
+}
+
+export function liveSpectrogramUrl(filename: string): string {
+  return `/api/spectrograms/${encodeURIComponent(filename)}`
 }
 
 export async function loadReport(): Promise<LoadedReport> {
