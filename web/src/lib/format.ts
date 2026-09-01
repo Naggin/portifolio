@@ -1,5 +1,25 @@
-export function cn(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(' ')
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...parts: ClassValue[]) {
+  return twMerge(clsx(parts))
+}
+
+export function formatInteger(value: number): string {
+  return new Intl.NumberFormat('pt-BR').format(value)
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  const kb = bytes / 1024
+  if (kb < 1024) return `${kb.toFixed(1)} KB`
+  const mb = bytes / (1024 * 1024)
+  if (mb < 1024) return `${mb.toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
+}
+
+export function formatHz(hz: number): string {
+  return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(hz)} Hz`
 }
 
 export function formatClock(iso: string | null): string {
