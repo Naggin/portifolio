@@ -55,6 +55,12 @@ O CLI percorre a pasta com `rglob` e aceita `.wav`, `.flac`, `.ogg`, `.mp3`,
 `.m4a`. Só no **fim** de todos os arquivos escreve o Excel e o JSON. Um log
 como `output/analyze.log` é só progresso; não é o relatório.
 
+Cópia enxuta para o Git (sem lista de eventos nem `band_energy`):
+
+```bash
+python3 scripts/summarize_campo.py   # → reports/campo_resumo.json
+```
+
 Bandeiras úteis:
 
 | Flag | Padrão | Função |
@@ -106,5 +112,5 @@ Fonte: `src/bioacoustics/config.py`. Calibração: `CEAES 2.m4a` (Fase 2).
 - `data/reference/` — áudio de calibração
 - `output/` — Excel, JSON e PNG gerados
 
-O método está no código e em `docs/METODOS.md`. Os números de um lote concreto
-estão em `output/resultado.xlsx` depois que o processo **termina**.
+O método está no código e em `docs/METODOS.md`. Os números deste lote estão em
+`output/resultado.xlsx` (local) e na cópia enxuta `reports/campo_resumo.json`.

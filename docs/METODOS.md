@@ -3,8 +3,8 @@
 Documento de métodos para o trabalho acadêmico sobre contagem automática de
 canto de *Sphaenorhynchus caramaschii* (perereca-de-banhado). O texto descreve
 o que o código **faz de fato** (`src/bioacoustics/`). Não substitui a revisão
-bibliográfica nem os números finais da tese: o lote de campo ainda pode estar
-em processamento.
+bibliográfica. Números deste lote: `reports/campo_resumo.json` e
+`output/resultado.xlsx`.
 
 Implementação de referência:
 
@@ -174,20 +174,21 @@ humana (PNG quando gerado, ou escuta pontual).
 1. **Evento ≠ indivíduo no açude.** Um macho que canta muitas vezes gera
    muitos eventos. Dois machos no mesmo pitch podem fundir-se em um evento.
 2. **Falsos positivos na banda.** Qualquer ruído em 2,6–3,2 kHz acima do
-   limiar (inseto, vento residual, gravador, outra espécie) vira evento. Nos
-   WAV de ~1 h do lote em andamento, a ordem de grandeza no log foi **cerca
-   de 1 600–2 500 eventos por hora**. Isso **pode incluir ruído**; não use
-   esses valores como resultado final da tese enquanto o lote não terminar
-   e não houver amostragem de conferência.
+   limiar (inseto, vento residual, gravador, outra espécie) vira evento. Neste
+   lote, a mediana nos WAV foi **~1 600 eventos/hora** (mín. 315, máx. 3 014).
+   Isso **pode incluir ruído** — a calibração foi no recorte limpo CEAES 2,
+   não no açude. Não use o total bruto como “número de machos” sem amostragem
+   de conferência.
 3. **Limiar por janela.** Cada 60 s tem a própria mediana/MAD. Coro contínuo
    ou silêncio prolongado mudam o limiar ao longo da noite.
 4. **Agregados hora/mês.** Usam a data/hora **do nome do arquivo**, não o
    instante de cada evento. Um WAV que começa às 18:09 coloca *todos* os
    eventos na hora 18, inclusive os dos minutos 50+. MP3s sem padrão `R…`
    saem dos gráficos.
-5. **Lote em processamento.** `output/resultado.xlsx` e `output/resultado.json`
-   só são gravados ao **final** do CLI. Enquanto `detect.py` corre, não há
-   planilha completa. Não cite totais parciais do log como números oficiais.
+5. **Relatórios só no fim do CLI.** `output/resultado.xlsx` e
+   `output/resultado.json` são gravados quando o lote **termina**. Totais
+   oficiais deste lote: 75 arquivos, 149 962 eventos, 104,7 h. Cópia enxuta no
+   Git: `reports/campo_resumo.json`.
 6. **PNG ausente neste lote.** Conferência visual arquivo a arquivo exige
    rerodar sem `--no-spectrogram` (e, em arquivos de horas, só o preview de
    60 s).

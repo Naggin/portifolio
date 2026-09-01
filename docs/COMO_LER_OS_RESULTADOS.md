@@ -10,13 +10,13 @@ entre planilha e gráfico: a aluna fica com os dois.
 | **JSON** | `output/resultado.json` | Mesmo conteúdo do painel; arquivo intermediário |
 | **PNG** | `output/<nome>_spectrogram.png` | Conferência humana (este lote: **não gerado**) |
 
-`output/` está no `.gitignore`. Depois que o `detect.py` **terminar**, copie
-a planilha para um pendrive/Drive da tese. Enquanto o processo estiver
-rodando, esses arquivos ainda não existem — o CLI só os grava no final.
+`output/` está no `.gitignore`. Copie `output/resultado.xlsx` para o pendrive
+ou Drive da tese. O CLI só grava Excel/JSON **quando termina todos os arquivos**.
 
-**Estado deste lote (campo):** em processamento. O log
-`output/analyze.log` mostra arquivos já concluídos, mas isso **não** é o
-relatório final. Não use totais parciais como número de tese.
+**Estado deste lote (campo):** concluído em 2026-09-01. 75 arquivos, 104,7 h,
+149 962 eventos, `max_simultaneous` = 2, 0 erros. Resumo commitável:
+`reports/campo_resumo.json`. Totais oficiais também em `output/resultado.xlsx`
+(máquina local, não no Git).
 
 ## 1. Excel — `resultado.xlsx`
 
@@ -196,8 +196,8 @@ Arquivos de várias horas, mesmo com PNG, só mostram os primeiros 60 s.
 
 ## 6. Cópia enxuta no repositório
 
-`output/` não é commitado. Se `resultado.json` **completo** existir, uma cópia
-enxuta (por arquivo: nome, `recorded_at`, duração, `n_events`,
-`max_simultaneous` — **sem** `band_energy` nem a lista de eventos) pode ir
-para `reports/campo_resumo.json`. Enquanto o lote estiver incompleto, esse
-arquivo **não** deve ser tratado como resultado da tese.
+`output/` não é commitado (`resultado.json` ~43 MB; `resultado.xlsx` ~7 MB).
+A cópia enxuta (por arquivo: campanha, nome, `recorded_at`, duração, `n_events`,
+`max_simultaneous`, eventos/hora — **sem** `band_energy` nem a lista de
+eventos) está em `reports/campo_resumo.json`, gerada por
+`scripts/summarize_campo.py`.

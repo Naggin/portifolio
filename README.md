@@ -30,8 +30,9 @@ A aluna **não escolhe** entre planilha e gráfico. Cada lote grava os dois:
 | **PNG** | `output/<arquivo>_spectrogram.png` | Conferência humana. **Este lote de campo usou `--no-spectrogram`** — não há PNG. |
 
 O CLI só escreve o `.xlsx` e o `.json` **quando termina todos os arquivos**.
-Enquanto `detect.py` estiver rodando, trate o lote como *em processamento* e
-não cite totais parciais do log como resultado de tese.
+Este lote de campo **terminou**: 75 arquivos, 104,7 h, 149 962 eventos
+(resumo em `reports/campo_resumo.json`; Excel/JSON completos em `output/`,
+gitignored).
 
 Documentação para a orientadora (português):
 
@@ -122,6 +123,8 @@ src/
   generate_sample.py  # synthetic test-audio generator
   detect.py           # CLI entrypoint
 docs/                 # instalação Mac, métodos, como ler resultados, reprodutibilidade (PT)
+scripts/              # download Drive, resumo do lote
+reports/              # campo_resumo.json (totais enxutos; sem WAV)
 tests/                # pipeline sanity tests
 web/                  # React + Vite dashboard
 data/audios/          # put real recordings here (git-ignored)
