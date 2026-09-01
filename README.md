@@ -36,6 +36,7 @@ gitignored).
 
 Documentação para a orientadora (português):
 
+- [docs/PRECISAO_E_LIMITES.md](docs/PRECISAO_E_LIMITES.md) — **o que a tese pode afirmar**: calibração, restrições, lote completo; o que **não** é censo nem prova de espécie em cada evento
 - [docs/INSTALACAO_MAC.md](docs/INSTALACAO_MAC.md) — **Instalação no Mac** (pipeline Python, ffmpeg, painel opcional)
 - [docs/METODOS.md](docs/METODOS.md) — espécie, banda, STFT, limiar MAD, simultaneidade, chunking, o que é contado, limitações
 - [docs/COMO_LER_OS_RESULTADOS.md](docs/COMO_LER_OS_RESULTADOS.md) — cada aba do Excel, campos JSON, como abrir o painel
