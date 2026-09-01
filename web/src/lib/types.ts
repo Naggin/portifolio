@@ -10,8 +10,14 @@ export type ReportFile = {
   n_events: number
   max_simultaneous: number
   threshold: number
-  spectrogram: string
-  band_energy: BandEnergySeries
+  spectrogram?: string
+  band_energy?: BandEnergySeries
+}
+
+export type EventsSample = {
+  per_file: number
+  n_shown: number
+  n_total: number
 }
 
 export type ReportEvent = {
@@ -53,6 +59,9 @@ export type DetectionReport = {
     max_simultaneous: number
     total_duration_s: number
   }
+  dashboard_source?: 'live' | 'demo' | 'campo'
+  has_spectrograms?: boolean
+  events_sample?: EventsSample
   files: ReportFile[]
   events: ReportEvent[]
   by_hour: HourBucket[]
