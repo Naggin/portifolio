@@ -122,7 +122,7 @@ Listas `{ "hour": 0–23, "n_events": … }` e `{ "month": 1–12, "n_events": �
 
 ## 3. Abrir o painel web
 
-Dois processos, em dois terminais, na raiz do repositório:
+Dois processos, em dois terminais, na raiz do repositório. No Mac, o ambiente (Python, ffmpeg, Node) está em `docs/INSTALACAO_MAC.md`.
 
 ```bash
 # 1. API que serve output/resultado.json

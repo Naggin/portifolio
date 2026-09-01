@@ -9,6 +9,8 @@ Comandos e parâmetros para repetir a detecção. Valores abaixo são os
 - `ffmpeg` no `PATH` (leitura de `.m4a` / seek em arquivos longos)
 - `ffprobe` opcional (duração sem decodificar o arquivo inteiro)
 
+No macOS (Homebrew, Apple Silicon, pasta local do Drive): `docs/INSTALACAO_MAC.md`.
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate

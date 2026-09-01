@@ -35,6 +35,7 @@ não cite totais parciais do log como resultado de tese.
 
 Documentação para a orientadora (português):
 
+- [docs/INSTALACAO_MAC.md](docs/INSTALACAO_MAC.md) — **Instalação no Mac** (pipeline Python, ffmpeg, painel opcional)
 - [docs/METODOS.md](docs/METODOS.md) — espécie, banda, STFT, limiar MAD, simultaneidade, chunking, o que é contado, limitações
 - [docs/COMO_LER_OS_RESULTADOS.md](docs/COMO_LER_OS_RESULTADOS.md) — cada aba do Excel, campos JSON, como abrir o painel
 - [docs/REPRODUTIBILIDADE.md](docs/REPRODUTIBILIDADE.md) — comandos e padrões de `DetectionConfig`
@@ -43,6 +44,8 @@ Documentação para a orientadora (português):
 
 - Python 3.11+
 - `ffmpeg` (used by `librosa`/`soundfile` for some formats)
+
+**Instalação no Mac:** [docs/INSTALACAO_MAC.md](docs/INSTALACAO_MAC.md) (`brew install python@3.12 ffmpeg`, venv, lote local do Drive). No Linux/Windows, os comandos abaixo.
 
 ## Setup
 
@@ -118,7 +121,7 @@ src/
     api.py            # dashboard HTTP API (report + upload)
   generate_sample.py  # synthetic test-audio generator
   detect.py           # CLI entrypoint
-docs/                 # métodos, como ler resultados, reprodutibilidade (PT)
+docs/                 # instalação Mac, métodos, como ler resultados, reprodutibilidade (PT)
 tests/                # pipeline sanity tests
 web/                  # React + Vite dashboard
 data/audios/          # put real recordings here (git-ignored)

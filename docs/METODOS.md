@@ -200,4 +200,4 @@ O mesmo lote produz **os dois** produtos (detalhe em
 - **Excel** `output/resultado.xlsx` — tabelas para Word, R, SPSS;
 - **JSON** `output/resultado.json` — contrato do painel web.
 
-Como reproduzir o lote: `docs/REPRODUTIBILIDADE.md`.
+Como reproduzir o lote: `docs/REPRODUTIBILIDADE.md`. No Mac, o ambiente (Python 3.11+, ffmpeg): `docs/INSTALACAO_MAC.md`.
