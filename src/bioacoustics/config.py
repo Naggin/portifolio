@@ -7,7 +7,9 @@ clean reference recording of the species.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, fields
+from pathlib import Path
 
 
 @dataclass
@@ -56,3 +58,20 @@ class DetectionConfig:
     @property
     def nyquist(self) -> float:
         return self.sample_rate / 2.0
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "DetectionConfig":
+        """Build a config from a mapping, ignoring unknown keys.
+
+        Accepts either a flat mapping of field names or a nested payload with a
+        ``config`` section (as written by the Phase 2 calibration tool).
+        """
+        if "config" in data and isinstance(data["config"], dict):
+            data = data["config"]
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, path: str | Path) -> "DetectionConfig":
+        """Load a config from a JSON file (e.g. ``output/calibration.json``)."""
+        return cls.from_dict(json.loads(Path(path).read_text()))

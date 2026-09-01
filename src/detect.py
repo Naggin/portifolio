@@ -35,12 +35,17 @@ def main() -> None:
     parser.add_argument("--output-dir", default="output", help="Where to write outputs.")
     parser.add_argument("--no-spectrogram", action="store_true", help="Skip PNG rendering.")
     parser.add_argument("--report", default="resultado.xlsx", help="Report filename.")
+    parser.add_argument(
+        "--config",
+        help="JSON config from calibration (e.g. output/calibration.json). "
+        "Explicit flags below override values loaded from it.",
+    )
     parser.add_argument("--lowcut", type=float, help="Band-pass low cut (Hz).")
     parser.add_argument("--highcut", type=float, help="Band-pass high cut (Hz).")
     parser.add_argument("--threshold-k", type=float, help="Detection threshold multiplier.")
     args = parser.parse_args()
 
-    cfg = DetectionConfig()
+    cfg = DetectionConfig.from_json(args.config) if args.config else DetectionConfig()
     if args.lowcut is not None:
         cfg.lowcut_hz = args.lowcut
     if args.highcut is not None:
