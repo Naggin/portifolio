@@ -67,6 +67,9 @@ def main() -> None:
         print(f"  calls found : {r.detection.n_events}")
         print(f"  max simult. : {r.detection.max_simultaneous} individual(s)")
         for i, ev in enumerate(r.detection.events, start=1):
+            if i > 15:
+                print(f"    ... {r.detection.n_events - 15} more events")
+                break
             print(
                 f"    #{i:>2}  t={ev.peak_time_s:6.2f}s  "
                 f"f={ev.peak_freq_hz:6.0f}Hz  dur={ev.duration_s:.2f}s"
