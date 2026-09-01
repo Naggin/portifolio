@@ -19,8 +19,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from generate_sample import synthesize  # noqa: E402
 
 
-def _detect(seed: int = 42):
+def _synthetic_cfg() -> DetectionConfig:
+    """Band matching the synthetic fixture (chirps at 2.6–2.8 & 3.2–3.4 kHz).
+
+    The shipped defaults are calibrated to the real species band (~2.2–3.2 kHz);
+    the synthetic generator predates that and was built around the wider generic
+    1.5–4 kHz band, so these algorithm tests pin that band explicitly to stay
+    independent of the species default.
+    """
     cfg = DetectionConfig()
+    cfg.lowcut_hz = 1_500.0
+    cfg.highcut_hz = 4_000.0
+    return cfg
+
+
+def _detect(seed: int = 42):
+    cfg = _synthetic_cfg()
     audio = synthesize(sr=cfg.sample_rate, duration_s=30.0, seed=seed)
     return run_detection(audio, cfg), cfg
 
