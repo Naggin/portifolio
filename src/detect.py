@@ -10,12 +10,12 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from bioacoustics.config import DetectionConfig
+from bioacoustics.config import AUDIO_EXTENSIONS, DetectionConfig
 from bioacoustics.pipeline import PipelineResult, process_file
 from bioacoustics.report import write_json_report, write_report
 from bioacoustics.visualization import save_spectrogram
 
-_AUDIO_EXTS = {".wav", ".flac", ".ogg", ".mp3"}
+_AUDIO_EXTS = set(AUDIO_EXTENSIONS)
 
 
 def _gather_inputs(inputs: list[str]) -> list[Path]:

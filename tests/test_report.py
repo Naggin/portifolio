@@ -52,4 +52,4 @@ def test_write_json_report_roundtrip(tmp_path: Path):
     out = write_json_report([result], tmp_path / "resultado.json")
     loaded = json.loads(out.read_text())
     assert loaded["summary"]["n_events"] == 8
-    assert loaded["config"]["lowcut_hz"] == 1500.0
+    assert loaded["config"]["lowcut_hz"] == 2600.0

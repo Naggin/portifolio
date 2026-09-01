@@ -97,8 +97,8 @@ def test_health_and_limits(api_http):
     payload = json.loads(raw)
     assert payload == {
         "max_files": 10,
-        "max_bytes": 500 * 1024 * 1024,
-        "extensions": [".wav", ".flac", ".ogg", ".mp3"],
+        "max_bytes": 2 * 1024 * 1024 * 1024,
+        "extensions": [".wav", ".flac", ".ogg", ".mp3", ".m4a"],
     }
 
 

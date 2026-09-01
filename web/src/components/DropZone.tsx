@@ -13,7 +13,11 @@ export function DropZone({ disabled = false, limits, onFiles }: DropZoneProps) {
   const inputId = useId()
   const accept = limits.extensions.join(',')
   const formats = limits.extensions.map((ext) => ext.replace('.', '').toUpperCase()).join(', ')
-  const maxMb = (limits.max_bytes / (1024 * 1024)).toFixed(0)
+  const maxBytes = limits.max_bytes
+  const maxLabel =
+    maxBytes >= 1024 * 1024 * 1024
+      ? `${(maxBytes / (1024 * 1024 * 1024)).toFixed(0)} GB`
+      : `${(maxBytes / (1024 * 1024)).toFixed(0)} MB`
   const [dragging, setDragging] = useState(false)
 
   function takeFiles(list: FileList | null) {
@@ -66,7 +70,7 @@ export function DropZone({ disabled = false, limits, onFiles }: DropZoneProps) {
       <Upload className="mx-auto mb-3 size-8 text-accent" aria-hidden="true" />
       <p className="text-lg font-medium text-ink">Arraste as gravações aqui</p>
       <p className="mt-1 text-sm text-muted">
-        ou escolha no seletor ({formats}; até {limits.max_files} por lote, {maxMb} MB cada)
+        ou escolha no seletor ({formats}; até {limits.max_files} por lote, {maxLabel} cada)
       </p>
       <span className="mt-4 inline-block rounded border border-line bg-paper px-3 py-1.5 text-sm font-medium text-ink">
         Selecionar arquivos

@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import BinaryIO
 from urllib.parse import unquote, urlparse
 
-from .config import DetectionConfig
+from .config import AUDIO_EXTENSIONS, DetectionConfig
 from .pipeline import process_file
 from .report import write_json_report, write_report
 from .visualization import save_spectrogram
@@ -28,10 +28,10 @@ DEFAULT_UPLOAD_DIR = Path("data/uploads")
 JSON_NAME = "resultado.json"
 XLSX_NAME = "resultado.xlsx"
 
-# Same extensions as ``src/detect.py`` ``_AUDIO_EXTS``. Easy to change.
-ALLOWED_EXTENSIONS = (".wav", ".flac", ".ogg", ".mp3")
+# Same extensions as ``DetectionConfig`` / the CLI. Easy to change.
+ALLOWED_EXTENSIONS = AUDIO_EXTENSIONS
 MAX_FILES_PER_REQUEST = 10
-MAX_BYTES_PER_FILE = 500 * 1024 * 1024  # 500 MB
+MAX_BYTES_PER_FILE = 2 * 1024 * 1024 * 1024  # 2 GB — 1 h WAV / 6 h MP3 field files
 # Multipart headers / boundaries on top of the file payloads.
 MULTIPART_OVERHEAD_BYTES = 1 * 1024 * 1024  # 1 MB
 

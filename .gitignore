@@ -10,6 +10,7 @@ data/audios/*
 !data/audios/.gitkeep
 data/uploads/*
 !data/uploads/.gitkeep
+data/reference/
 output/*
 !output/.gitkeep
 

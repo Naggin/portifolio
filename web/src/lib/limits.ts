@@ -1,8 +1,8 @@
 /** Client-side upload limiter. Keep values obvious; `/api/limits` may override at runtime. */
 
 export const MAX_FILES = 10
-export const MAX_BYTES = 500 * 1024 * 1024
-export const ALLOWED_EXTENSIONS = ['.wav', '.flac', '.ogg', '.mp3'] as const
+export const MAX_BYTES = 2 * 1024 * 1024 * 1024
+export const ALLOWED_EXTENSIONS = ['.wav', '.flac', '.ogg', '.mp3', '.m4a'] as const
 
 export type UploadLimits = {
   max_files: number
@@ -56,8 +56,8 @@ export function parseLimits(value: unknown): UploadLimits {
 export function oversizeMessage(name: string, size: number, maxBytes: number): string {
   return (
     `«${name}» tem ${formatBytesPt(size)}, acima do limite de ${formatBytesPt(maxBytes)}. ` +
-    'O painel analisa gravações de até 500 MB (~1 hora em WAV típico). ' +
-    'Arquivos maiores devem aguardar o processamento em partes.'
+    'O painel analisa gravações de até 2 GB (WAV de ~1 h ou MP3 de várias horas). ' +
+    'Arquivos maiores precisam ser divididos antes do envio.'
   )
 }
 
