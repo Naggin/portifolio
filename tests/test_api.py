@@ -18,14 +18,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from bioacoustics import api  # noqa: E402
 from bioacoustics.config import DetectionConfig  # noqa: E402
-from generate_sample import synthesize  # noqa: E402
 
 
-def _wav_bytes(duration_s: float = 2.0, sr: int = 22_050, seed: int | None = None) -> bytes:
-    if seed is None:
-        audio = np.zeros(int(sr * duration_s), dtype=np.float32)
-    else:
-        audio = synthesize(sr=sr, duration_s=duration_s, seed=seed)
+def _wav_bytes(duration_s: float = 4.0, sr: int = 22_050) -> bytes:
+    """Tiny in-band tone; long enough for the pipeline filters, far smaller than field WAVs."""
+    n = int(sr * duration_s)
+    t = np.arange(n) / sr
+    audio = (0.05 * np.sin(2 * np.pi * 2700 * t)).astype(np.float32)
     buf = io.BytesIO()
     sf.write(buf, audio, sr, format="WAV", subtype="PCM_16")
     return buf.getvalue()
@@ -179,7 +178,7 @@ def test_reject_too_many_files(api_http, monkeypatch: pytest.MonkeyPatch):
 
 def test_analyze_tiny_wav_returns_report(api_http):
     port = api_http["port"]
-    wav = _wav_bytes(duration_s=5.0, seed=42)
+    wav = _wav_bytes()
     body, ctype = _encode_multipart([("files", "R20241011-180923.WAV", wav)])
     status, raw, headers = _request(
         port, "POST", "/api/analyze", body=body, headers={"Content-Type": ctype}
@@ -202,7 +201,7 @@ def test_analyze_tiny_wav_returns_report(api_http):
 
 def test_analyze_accepts_file_field_and_unparsed_name(api_http):
     port = api_http["port"]
-    wav = _wav_bytes(duration_s=2.0)
+    wav = _wav_bytes()
     body, ctype = _encode_multipart([("file", "frog.wav", wav)])
     status, raw, _ = _request(
         port, "POST", "/api/analyze", body=body, headers={"Content-Type": ctype}
