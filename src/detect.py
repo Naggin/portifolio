@@ -12,7 +12,7 @@ from pathlib import Path
 
 from bioacoustics.config import DetectionConfig
 from bioacoustics.pipeline import PipelineResult, process_file
-from bioacoustics.report import write_report
+from bioacoustics.report import write_json_report, write_report
 from bioacoustics.visualization import save_spectrogram
 
 _AUDIO_EXTS = {".wav", ".flac", ".ogg", ".mp3"}
@@ -34,7 +34,8 @@ def main() -> None:
     parser.add_argument("inputs", nargs="+", help="Audio file(s) or folder(s).")
     parser.add_argument("--output-dir", default="output", help="Where to write outputs.")
     parser.add_argument("--no-spectrogram", action="store_true", help="Skip PNG rendering.")
-    parser.add_argument("--report", default="resultado.xlsx", help="Report filename.")
+    parser.add_argument("--report", default="resultado.xlsx", help="Excel report filename.")
+    parser.add_argument("--json-report", default="resultado.json", help="JSON report filename.")
     parser.add_argument("--lowcut", type=float, help="Band-pass low cut (Hz).")
     parser.add_argument("--highcut", type=float, help="Band-pass high cut (Hz).")
     parser.add_argument("--threshold-k", type=float, help="Detection threshold multiplier.")
@@ -78,7 +79,10 @@ def main() -> None:
 
     report_path = out_dir / args.report
     write_report(results, report_path)
+    json_path = out_dir / args.json_report
+    write_json_report(results, json_path, cfg)
     print(f"\nReport written: {report_path}")
+    print(f"JSON report   : {json_path}")
     total = sum(r.detection.n_events for r in results)
     print(f"Total files: {len(results)}  |  total calls: {total}")
 
