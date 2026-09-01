@@ -8,7 +8,15 @@ estimate how many individuals vocalize simultaneously, and export a report.
 
 from .config import DetectionConfig
 from .pipeline import PipelineResult, process_file
+from .report import build_report_payload, write_json_report, write_report
 
-__all__ = ["DetectionConfig", "PipelineResult", "process_file"]
+__all__ = [
+    "DetectionConfig",
+    "PipelineResult",
+    "process_file",
+    "build_report_payload",
+    "write_json_report",
+    "write_report",
+]
 
 __version__ = "0.1.0"

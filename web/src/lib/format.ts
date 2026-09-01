@@ -1,0 +1,37 @@
+export function cn(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(' ')
+}
+
+export function formatClock(iso: string | null): string {
+  if (!iso) return 'sem data'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+export function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds.toFixed(0)} s`
+  const minutes = seconds / 60
+  if (minutes < 60) return `${minutes.toFixed(1)} min`
+  return `${(minutes / 60).toFixed(1)} h`
+}
+
+export function formatSeconds(seconds: number): string {
+  return `${seconds.toFixed(2)} s`
+}
+
+export function monthLabel(month: number): string {
+  return new Intl.DateTimeFormat('pt-BR', { month: 'short' })
+    .format(new Date(2024, month - 1, 1))
+    .replace('.', '')
+}
+
+export function hourLabel(hour: number): string {
+  return `${String(hour).padStart(2, '0')}h`
+}
