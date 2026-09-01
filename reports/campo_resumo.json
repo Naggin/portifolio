@@ -1,0 +1,1067 @@
+{
+  "generated_from": "output/resultado.json",
+  "pipeline_generated_at": "2026-09-01T13:20:58.828375+00:00",
+  "species": "Sphaenorhynchus caramaschii",
+  "common_name": "perereca-de-banhado",
+  "config": {
+    "sample_rate": 22050,
+    "lowcut_hz": 2600.0,
+    "highcut_hz": 3200.0,
+    "threshold_k": 6.0
+  },
+  "command": "PYTHONPATH=src python3 src/detect.py data/field --no-spectrogram --output-dir output --report resultado.xlsx --json-report resultado.json",
+  "skipped_drive_folders": [
+    "15/08 açude 2 (esse nao precisa)",
+    "Áudio base"
+  ],
+  "artifacts": {
+    "xlsx": "output/resultado.xlsx (gitignored, ~7 MB)",
+    "json": "output/resultado.json (gitignored, ~43 MB; events + band_energy)",
+    "log": "output/analyze.log",
+    "dashboard": "PYTHONPATH=src python -m bioacoustics.api  and  cd web && npm run dev  (GET /api/report reads output/resultado.json)"
+  },
+  "summary": {
+    "n_files": 75,
+    "n_events": 149962,
+    "max_simultaneous": 2,
+    "total_duration_s": 377071.812,
+    "total_duration_h": 104.742,
+    "events_per_hour": 1431.7,
+    "n_errors": 0,
+    "n_files_without_recorded_at": 7,
+    "n_events_without_recorded_at": 50170,
+    "n_events_in_by_hour_by_month": 99792
+  },
+  "wav_events_per_hour": {
+    "n": 68,
+    "min": 315.0,
+    "median": 1626.5,
+    "max": 3014.4
+  },
+  "mp3_events_per_hour": {
+    "n": 7,
+    "min": 626.6,
+    "median": 1473.7,
+    "max": 1773.4
+  },
+  "peak_freq_hz": {
+    "min": 2605.5,
+    "p25": 2680.9,
+    "median": 2745.5,
+    "p75": 2907.0,
+    "max": 3197.7,
+    "hist_100hz": [
+      {
+        "lo": 2600.0,
+        "hi": 2700.0,
+        "n": 47582
+      },
+      {
+        "lo": 2700.0,
+        "hi": 2800.0,
+        "n": 44655
+      },
+      {
+        "lo": 2800.0,
+        "hi": 2900.0,
+        "n": 19962
+      },
+      {
+        "lo": 2900.0,
+        "hi": 3000.0,
+        "n": 16894
+      },
+      {
+        "lo": 3000.0,
+        "hi": 3100.0,
+        "n": 11922
+      },
+      {
+        "lo": 3100.0,
+        "hi": 3200.0,
+        "n": 8947
+      }
+    ]
+  },
+  "event_duration_s": {
+    "min": 0.07,
+    "p25": 0.139,
+    "median": 0.302,
+    "p75": 0.673,
+    "max": 33.855
+  },
+  "n_callers": {
+    "1": 90539,
+    "2": 59423
+  },
+  "caveats": [
+    "Mediana nos WAV: ~1 600 eventos/hora (mín. 315, máx. 3 014). Isso pode incluir ruído/insetos na banda 2,6–3,2 kHz; a calibração foi no recorte limpo CEAES 2, não no campo ruidoso.",
+    "max_simultaneous=2 em todos os arquivos é também um teto estrutural: banda de 600 Hz com freq_separation_hz=400 Hz cabe no máximo ~2 picos distintos.",
+    "7 MP3s (campanhas 12_09_25 e 15_08_25) não têm recorded_at no nome; seus eventos entram no total mas não em by_hour/by_month (agosto/setembro ficam de fora desses gráficos).",
+    "Agregados por hora usam a hora do INÍCIO do arquivo, não o instante de cada evento.",
+    "Este lote rodou com --no-spectrogram; não há PNG por arquivo."
+  ],
+  "campaigns": [
+    {
+      "campaign": "10_10_25 açude 1",
+      "n_files": 16,
+      "n_events": 28639,
+      "total_duration_s": 55611.584,
+      "max_simultaneous": 2,
+      "n_without_recorded_at": 0,
+      "total_duration_h": 15.448,
+      "events_per_hour": 1853.9
+    },
+    {
+      "campaign": "12_09_25 açude 1",
+      "n_files": 4,
+      "n_events": 29391,
+      "total_duration_s": 82814.942,
+      "max_simultaneous": 2,
+      "n_without_recorded_at": 4,
+      "total_duration_h": 23.004,
+      "events_per_hour": 1277.6
+    },
+    {
+      "campaign": "15_08_25 açude 1",
+      "n_files": 3,
+      "n_events": 20779,
+      "total_duration_s": 59242.661,
+      "max_simultaneous": 2,
+      "n_without_recorded_at": 3,
+      "total_duration_h": 16.456,
+      "events_per_hour": 1262.7
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "n_files": 18,
+      "n_events": 18880,
+      "total_duration_s": 63131.136,
+      "max_simultaneous": 2,
+      "n_without_recorded_at": 0,
+      "total_duration_h": 17.536,
+      "events_per_hour": 1076.6
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "n_files": 19,
+      "n_events": 30104,
+      "total_duration_s": 64967.168,
+      "max_simultaneous": 2,
+      "n_without_recorded_at": 0,
+      "total_duration_h": 18.046,
+      "events_per_hour": 1668.1
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "n_files": 15,
+      "n_events": 22169,
+      "total_duration_s": 51304.32,
+      "max_simultaneous": 2,
+      "n_without_recorded_at": 0,
+      "total_duration_h": 14.251,
+      "events_per_hour": 1555.6
+    }
+  ],
+  "files": [
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241011-180923.WAV",
+      "recorded_at": "2024-10-11T18:09:23",
+      "duration_s": 3600.064,
+      "n_events": 1938,
+      "max_simultaneous": 2,
+      "events_per_hour": 1938.0,
+      "threshold": 23.526001
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241011-190926.WAV",
+      "recorded_at": "2024-10-11T19:09:26",
+      "duration_s": 3600.0,
+      "n_events": 1974,
+      "max_simultaneous": 2,
+      "events_per_hour": 1974.0,
+      "threshold": 18.445832
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241011-200930.WAV",
+      "recorded_at": "2024-10-11T20:09:30",
+      "duration_s": 3600.064,
+      "n_events": 1970,
+      "max_simultaneous": 2,
+      "events_per_hour": 1970.0,
+      "threshold": 13.296908
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241011-210934.WAV",
+      "recorded_at": "2024-10-11T21:09:34",
+      "duration_s": 3600.0,
+      "n_events": 1664,
+      "max_simultaneous": 2,
+      "events_per_hour": 1664.0,
+      "threshold": 16.855443
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241011-220938.WAV",
+      "recorded_at": "2024-10-11T22:09:38",
+      "duration_s": 3600.0,
+      "n_events": 1659,
+      "max_simultaneous": 2,
+      "events_per_hour": 1659.0,
+      "threshold": 11.040098
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241011-230942.WAV",
+      "recorded_at": "2024-10-11T23:09:42",
+      "duration_s": 3600.064,
+      "n_events": 1789,
+      "max_simultaneous": 2,
+      "events_per_hour": 1789.0,
+      "threshold": 3.502526
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241012-000946.WAV",
+      "recorded_at": "2024-10-12T00:09:46",
+      "duration_s": 3600.064,
+      "n_events": 1735,
+      "max_simultaneous": 2,
+      "events_per_hour": 1735.0,
+      "threshold": 1.815976
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241012-010949.WAV",
+      "recorded_at": "2024-10-12T01:09:49",
+      "duration_s": 3600.0,
+      "n_events": 1633,
+      "max_simultaneous": 2,
+      "events_per_hour": 1633.0,
+      "threshold": 0.179616
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241012-020953.WAV",
+      "recorded_at": "2024-10-12T02:09:53",
+      "duration_s": 3600.064,
+      "n_events": 1594,
+      "max_simultaneous": 2,
+      "events_per_hour": 1594.0,
+      "threshold": 0.504022
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241012-030958.WAV",
+      "recorded_at": "2024-10-12T03:09:58",
+      "duration_s": 3600.064,
+      "n_events": 1867,
+      "max_simultaneous": 2,
+      "events_per_hour": 1867.0,
+      "threshold": 0.135155
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241012-041002.WAV",
+      "recorded_at": "2024-10-12T04:10:02",
+      "duration_s": 3600.0,
+      "n_events": 2516,
+      "max_simultaneous": 2,
+      "events_per_hour": 2516.0,
+      "threshold": 4.438555
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241012-051006.WAV",
+      "recorded_at": "2024-10-12T05:10:06",
+      "duration_s": 3600.064,
+      "n_events": 1637,
+      "max_simultaneous": 2,
+      "events_per_hour": 1637.0,
+      "threshold": 0.645949
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241012-061009.WAV",
+      "recorded_at": "2024-10-12T06:10:09",
+      "duration_s": 3600.0,
+      "n_events": 1620,
+      "max_simultaneous": 2,
+      "events_per_hour": 1620.0,
+      "threshold": 0.673893
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241012-071013.WAV",
+      "recorded_at": "2024-10-12T07:10:13",
+      "duration_s": 3600.064,
+      "n_events": 1751,
+      "max_simultaneous": 2,
+      "events_per_hour": 1751.0,
+      "threshold": 1.765875
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241012-081018.WAV",
+      "recorded_at": "2024-10-12T08:10:18",
+      "duration_s": 3600.0,
+      "n_events": 1943,
+      "max_simultaneous": 2,
+      "events_per_hour": 1943.0,
+      "threshold": 0.328417
+    },
+    {
+      "campaign": "10_10_25 açude 1",
+      "file": "R20241012-091022.WAV",
+      "recorded_at": "2024-10-12T09:10:22",
+      "duration_s": 1611.072,
+      "n_events": 1349,
+      "max_simultaneous": 2,
+      "events_per_hour": 3014.4,
+      "threshold": 0.538936
+    },
+    {
+      "campaign": "12_09_25 açude 1",
+      "file": "111009_001.MP3",
+      "recorded_at": null,
+      "duration_s": 21836.562,
+      "n_events": 10701,
+      "max_simultaneous": 2,
+      "events_per_hour": 1764.2,
+      "threshold": 3.343754
+    },
+    {
+      "campaign": "12_09_25 açude 1",
+      "file": "111009_002.MP3",
+      "recorded_at": null,
+      "duration_s": 21836.562,
+      "n_events": 6364,
+      "max_simultaneous": 2,
+      "events_per_hour": 1049.2,
+      "threshold": 0.623621
+    },
+    {
+      "campaign": "12_09_25 açude 1",
+      "file": "111009_003.MP3",
+      "recorded_at": null,
+      "duration_s": 21836.562,
+      "n_events": 3801,
+      "max_simultaneous": 2,
+      "events_per_hour": 626.6,
+      "threshold": 0.538255
+    },
+    {
+      "campaign": "12_09_25 açude 1",
+      "file": "111010_001.MP3",
+      "recorded_at": null,
+      "duration_s": 17305.256,
+      "n_events": 8525,
+      "max_simultaneous": 2,
+      "events_per_hour": 1773.4,
+      "threshold": 0.516021
+    },
+    {
+      "campaign": "15_08_25 açude 1",
+      "file": "Z0000002.MP3",
+      "recorded_at": null,
+      "duration_s": 21836.562,
+      "n_events": 9124,
+      "max_simultaneous": 2,
+      "events_per_hour": 1504.2,
+      "threshold": 2.26308
+    },
+    {
+      "campaign": "15_08_25 açude 1",
+      "file": "Z0000003.MP3",
+      "recorded_at": null,
+      "duration_s": 21836.562,
+      "n_events": 8939,
+      "max_simultaneous": 2,
+      "events_per_hour": 1473.7,
+      "threshold": 0.254576
+    },
+    {
+      "campaign": "15_08_25 açude 1",
+      "file": "Z0000004.MP3",
+      "recorded_at": null,
+      "duration_s": 15569.537,
+      "n_events": 2716,
+      "max_simultaneous": 2,
+      "events_per_hour": 628.0,
+      "threshold": 0.47757
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250223-165400.WAV",
+      "recorded_at": "2025-02-23T16:54:00",
+      "duration_s": 3600.064,
+      "n_events": 1536,
+      "max_simultaneous": 2,
+      "events_per_hour": 1536.0,
+      "threshold": 7.233587
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250223-175402.WAV",
+      "recorded_at": "2025-02-23T17:54:02",
+      "duration_s": 3600.0,
+      "n_events": 1571,
+      "max_simultaneous": 2,
+      "events_per_hour": 1571.0,
+      "threshold": 6.473672
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250223-185407.WAV",
+      "recorded_at": "2025-02-23T18:54:07",
+      "duration_s": 3600.0,
+      "n_events": 1138,
+      "max_simultaneous": 2,
+      "events_per_hour": 1138.0,
+      "threshold": 9.892504
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250223-195410.WAV",
+      "recorded_at": "2025-02-23T19:54:10",
+      "duration_s": 3600.064,
+      "n_events": 1556,
+      "max_simultaneous": 2,
+      "events_per_hour": 1556.0,
+      "threshold": 0.409381
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250223-205413.WAV",
+      "recorded_at": "2025-02-23T20:54:13",
+      "duration_s": 3600.064,
+      "n_events": 464,
+      "max_simultaneous": 2,
+      "events_per_hour": 464.0,
+      "threshold": 0.039349
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250223-215416.WAV",
+      "recorded_at": "2025-02-23T21:54:16",
+      "duration_s": 3600.0,
+      "n_events": 315,
+      "max_simultaneous": 2,
+      "events_per_hour": 315.0,
+      "threshold": 0.037287
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250223-225420.WAV",
+      "recorded_at": "2025-02-23T22:54:20",
+      "duration_s": 3600.0,
+      "n_events": 832,
+      "max_simultaneous": 2,
+      "events_per_hour": 832.0,
+      "threshold": 0.035937
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250223-235423.WAV",
+      "recorded_at": "2025-02-23T23:54:23",
+      "duration_s": 3600.064,
+      "n_events": 615,
+      "max_simultaneous": 2,
+      "events_per_hour": 615.0,
+      "threshold": 0.036212
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250224-005427.WAV",
+      "recorded_at": "2025-02-24T00:54:27",
+      "duration_s": 3600.0,
+      "n_events": 716,
+      "max_simultaneous": 2,
+      "events_per_hour": 716.0,
+      "threshold": 0.035533
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250224-015430.WAV",
+      "recorded_at": "2025-02-24T01:54:30",
+      "duration_s": 3600.0,
+      "n_events": 654,
+      "max_simultaneous": 2,
+      "events_per_hour": 654.0,
+      "threshold": 0.034862
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250224-025436.WAV",
+      "recorded_at": "2025-02-24T02:54:36",
+      "duration_s": 3600.064,
+      "n_events": 1803,
+      "max_simultaneous": 2,
+      "events_per_hour": 1803.0,
+      "threshold": 0.107056
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250224-035439.WAV",
+      "recorded_at": "2025-02-24T03:54:39",
+      "duration_s": 3600.0,
+      "n_events": 1143,
+      "max_simultaneous": 2,
+      "events_per_hour": 1143.0,
+      "threshold": 0.0815
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250224-045443.WAV",
+      "recorded_at": "2025-02-24T04:54:43",
+      "duration_s": 3600.064,
+      "n_events": 1520,
+      "max_simultaneous": 2,
+      "events_per_hour": 1520.0,
+      "threshold": 0.077343
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250224-055447.WAV",
+      "recorded_at": "2025-02-24T05:54:47",
+      "duration_s": 3600.064,
+      "n_events": 1360,
+      "max_simultaneous": 2,
+      "events_per_hour": 1360.0,
+      "threshold": 5.944199
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250224-065450.WAV",
+      "recorded_at": "2025-02-24T06:54:50",
+      "duration_s": 3600.064,
+      "n_events": 1007,
+      "max_simultaneous": 2,
+      "events_per_hour": 1007.0,
+      "threshold": 0.301417
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250224-075454.WAV",
+      "recorded_at": "2025-02-24T07:54:54",
+      "duration_s": 3600.0,
+      "n_events": 1185,
+      "max_simultaneous": 2,
+      "events_per_hour": 1185.0,
+      "threshold": 0.253719
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250224-085459.WAV",
+      "recorded_at": "2025-02-24T08:54:59",
+      "duration_s": 3600.064,
+      "n_events": 881,
+      "max_simultaneous": 2,
+      "events_per_hour": 881.0,
+      "threshold": 0.142677
+    },
+    {
+      "campaign": "22_02_26 açude 1",
+      "file": "R20250224-095503.WAV",
+      "recorded_at": "2025-02-24T09:55:03",
+      "duration_s": 1930.56,
+      "n_events": 584,
+      "max_simultaneous": 2,
+      "events_per_hour": 1089.0,
+      "threshold": 0.118453
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241025-145736.WAV",
+      "recorded_at": "2024-10-25T14:57:36",
+      "duration_s": 3600.064,
+      "n_events": 1663,
+      "max_simultaneous": 2,
+      "events_per_hour": 1663.0,
+      "threshold": 0.897665
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241025-155739.WAV",
+      "recorded_at": "2024-10-25T15:57:39",
+      "duration_s": 3600.0,
+      "n_events": 1574,
+      "max_simultaneous": 2,
+      "events_per_hour": 1574.0,
+      "threshold": 10.173316
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241025-165742.WAV",
+      "recorded_at": "2024-10-25T16:57:42",
+      "duration_s": 3600.0,
+      "n_events": 2087,
+      "max_simultaneous": 2,
+      "events_per_hour": 2087.0,
+      "threshold": 11.500923
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241025-175744.WAV",
+      "recorded_at": "2024-10-25T17:57:44",
+      "duration_s": 3600.0,
+      "n_events": 2098,
+      "max_simultaneous": 2,
+      "events_per_hour": 2098.0,
+      "threshold": 15.564638
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241025-185747.WAV",
+      "recorded_at": "2024-10-25T18:57:47",
+      "duration_s": 3600.0,
+      "n_events": 1530,
+      "max_simultaneous": 2,
+      "events_per_hour": 1530.0,
+      "threshold": 8.576376
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241025-195750.WAV",
+      "recorded_at": "2024-10-25T19:57:50",
+      "duration_s": 3600.0,
+      "n_events": 1536,
+      "max_simultaneous": 2,
+      "events_per_hour": 1536.0,
+      "threshold": 5.236599
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241025-205753.WAV",
+      "recorded_at": "2024-10-25T20:57:53",
+      "duration_s": 3600.0,
+      "n_events": 1800,
+      "max_simultaneous": 2,
+      "events_per_hour": 1800.0,
+      "threshold": 0.236064
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241025-215757.WAV",
+      "recorded_at": "2024-10-25T21:57:57",
+      "duration_s": 3600.064,
+      "n_events": 1421,
+      "max_simultaneous": 2,
+      "events_per_hour": 1421.0,
+      "threshold": 0.064795
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241025-225800.WAV",
+      "recorded_at": "2024-10-25T22:58:00",
+      "duration_s": 3600.064,
+      "n_events": 1370,
+      "max_simultaneous": 2,
+      "events_per_hour": 1370.0,
+      "threshold": 0.049697
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241025-235805.WAV",
+      "recorded_at": "2024-10-25T23:58:05",
+      "duration_s": 3600.064,
+      "n_events": 1287,
+      "max_simultaneous": 2,
+      "events_per_hour": 1287.0,
+      "threshold": 0.048006
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241026-005809.WAV",
+      "recorded_at": "2024-10-26T00:58:09",
+      "duration_s": 3600.064,
+      "n_events": 1117,
+      "max_simultaneous": 2,
+      "events_per_hour": 1117.0,
+      "threshold": 0.078478
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241026-015812.WAV",
+      "recorded_at": "2024-10-26T01:58:12",
+      "duration_s": 3600.0,
+      "n_events": 1847,
+      "max_simultaneous": 2,
+      "events_per_hour": 1847.0,
+      "threshold": 0.96582
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241026-025816.WAV",
+      "recorded_at": "2024-10-26T02:58:16",
+      "duration_s": 3600.064,
+      "n_events": 1392,
+      "max_simultaneous": 2,
+      "events_per_hour": 1392.0,
+      "threshold": 2.531222
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241026-035819.WAV",
+      "recorded_at": "2024-10-26T03:58:19",
+      "duration_s": 3600.064,
+      "n_events": 1692,
+      "max_simultaneous": 2,
+      "events_per_hour": 1692.0,
+      "threshold": 1.148863
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241026-045823.WAV",
+      "recorded_at": "2024-10-26T04:58:23",
+      "duration_s": 3600.064,
+      "n_events": 1765,
+      "max_simultaneous": 2,
+      "events_per_hour": 1765.0,
+      "threshold": 0.814859
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241026-055827.WAV",
+      "recorded_at": "2024-10-26T05:58:27",
+      "duration_s": 3600.0,
+      "n_events": 1842,
+      "max_simultaneous": 2,
+      "events_per_hour": 1842.0,
+      "threshold": 0.151788
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241026-065831.WAV",
+      "recorded_at": "2024-10-26T06:58:31",
+      "duration_s": 3600.064,
+      "n_events": 2134,
+      "max_simultaneous": 2,
+      "events_per_hour": 2134.0,
+      "threshold": 0.583308
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241026-075834.WAV",
+      "recorded_at": "2024-10-26T07:58:34",
+      "duration_s": 3600.064,
+      "n_events": 1868,
+      "max_simultaneous": 2,
+      "events_per_hour": 1868.0,
+      "threshold": 0.974874
+    },
+    {
+      "campaign": "24_10_25 açude 1",
+      "file": "R20241026-085838.WAV",
+      "recorded_at": "2024-10-26T08:58:38",
+      "duration_s": 166.528,
+      "n_events": 81,
+      "max_simultaneous": 2,
+      "events_per_hour": 1751.1,
+      "threshold": 0.501787
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260128-202631.WAV",
+      "recorded_at": "2026-01-28T20:26:31",
+      "duration_s": 3600.064,
+      "n_events": 1639,
+      "max_simultaneous": 2,
+      "events_per_hour": 1639.0,
+      "threshold": 8.21277
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260128-212634.WAV",
+      "recorded_at": "2026-01-28T21:26:34",
+      "duration_s": 3600.064,
+      "n_events": 1262,
+      "max_simultaneous": 2,
+      "events_per_hour": 1262.0,
+      "threshold": 3.228433
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260128-222638.WAV",
+      "recorded_at": "2026-01-28T22:26:38",
+      "duration_s": 3600.0,
+      "n_events": 1882,
+      "max_simultaneous": 2,
+      "events_per_hour": 1882.0,
+      "threshold": 1.228536
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260128-232641.WAV",
+      "recorded_at": "2026-01-28T23:26:41",
+      "duration_s": 3600.0,
+      "n_events": 2167,
+      "max_simultaneous": 2,
+      "events_per_hour": 2167.0,
+      "threshold": 0.74925
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260129-002644.WAV",
+      "recorded_at": "2026-01-29T00:26:44",
+      "duration_s": 3600.064,
+      "n_events": 1652,
+      "max_simultaneous": 2,
+      "events_per_hour": 1652.0,
+      "threshold": 0.060372
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260129-012648.WAV",
+      "recorded_at": "2026-01-29T01:26:48",
+      "duration_s": 3600.0,
+      "n_events": 1101,
+      "max_simultaneous": 2,
+      "events_per_hour": 1101.0,
+      "threshold": 0.050254
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260129-022652.WAV",
+      "recorded_at": "2026-01-29T02:26:52",
+      "duration_s": 3600.0,
+      "n_events": 609,
+      "max_simultaneous": 2,
+      "events_per_hour": 609.0,
+      "threshold": 0.064597
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260129-032655.WAV",
+      "recorded_at": "2026-01-29T03:26:55",
+      "duration_s": 3600.064,
+      "n_events": 1100,
+      "max_simultaneous": 2,
+      "events_per_hour": 1100.0,
+      "threshold": 0.048956
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260129-042659.WAV",
+      "recorded_at": "2026-01-29T04:26:59",
+      "duration_s": 3600.0,
+      "n_events": 1342,
+      "max_simultaneous": 2,
+      "events_per_hour": 1342.0,
+      "threshold": 0.052605
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260129-052705.WAV",
+      "recorded_at": "2026-01-29T05:27:05",
+      "duration_s": 3600.0,
+      "n_events": 2342,
+      "max_simultaneous": 2,
+      "events_per_hour": 2342.0,
+      "threshold": 1.157522
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260129-062710.WAV",
+      "recorded_at": "2026-01-29T06:27:10",
+      "duration_s": 3600.0,
+      "n_events": 1717,
+      "max_simultaneous": 2,
+      "events_per_hour": 1717.0,
+      "threshold": 0.104411
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260129-072714.WAV",
+      "recorded_at": "2026-01-29T07:27:14",
+      "duration_s": 3600.0,
+      "n_events": 1663,
+      "max_simultaneous": 2,
+      "events_per_hour": 1663.0,
+      "threshold": 0.373922
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260129-082718.WAV",
+      "recorded_at": "2026-01-29T08:27:18",
+      "duration_s": 3600.064,
+      "n_events": 1793,
+      "max_simultaneous": 2,
+      "events_per_hour": 1793.0,
+      "threshold": 0.076564
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260129-092723.WAV",
+      "recorded_at": "2026-01-29T09:27:23",
+      "duration_s": 3600.0,
+      "n_events": 1603,
+      "max_simultaneous": 2,
+      "events_per_hour": 1603.0,
+      "threshold": 0.45094
+    },
+    {
+      "campaign": "28_01_26 açude 1",
+      "file": "R20260129-102727.WAV",
+      "recorded_at": "2026-01-29T10:27:27",
+      "duration_s": 904.0,
+      "n_events": 297,
+      "max_simultaneous": 2,
+      "events_per_hour": 1182.7,
+      "threshold": 0.073277
+    }
+  ],
+  "by_hour": [
+    {
+      "hour": 0,
+      "n_events": 5220
+    },
+    {
+      "hour": 1,
+      "n_events": 5235
+    },
+    {
+      "hour": 2,
+      "n_events": 5398
+    },
+    {
+      "hour": 3,
+      "n_events": 5802
+    },
+    {
+      "hour": 4,
+      "n_events": 7143
+    },
+    {
+      "hour": 5,
+      "n_events": 7181
+    },
+    {
+      "hour": 6,
+      "n_events": 6478
+    },
+    {
+      "hour": 7,
+      "n_events": 6467
+    },
+    {
+      "hour": 8,
+      "n_events": 4698
+    },
+    {
+      "hour": 9,
+      "n_events": 3536
+    },
+    {
+      "hour": 10,
+      "n_events": 297
+    },
+    {
+      "hour": 11,
+      "n_events": 0
+    },
+    {
+      "hour": 12,
+      "n_events": 0
+    },
+    {
+      "hour": 13,
+      "n_events": 0
+    },
+    {
+      "hour": 14,
+      "n_events": 1663
+    },
+    {
+      "hour": 15,
+      "n_events": 1574
+    },
+    {
+      "hour": 16,
+      "n_events": 3623
+    },
+    {
+      "hour": 17,
+      "n_events": 3669
+    },
+    {
+      "hour": 18,
+      "n_events": 4606
+    },
+    {
+      "hour": 19,
+      "n_events": 5066
+    },
+    {
+      "hour": 20,
+      "n_events": 5873
+    },
+    {
+      "hour": 21,
+      "n_events": 4662
+    },
+    {
+      "hour": 22,
+      "n_events": 5743
+    },
+    {
+      "hour": 23,
+      "n_events": 5858
+    }
+  ],
+  "by_month": [
+    {
+      "month": 1,
+      "n_events": 22169
+    },
+    {
+      "month": 2,
+      "n_events": 18880
+    },
+    {
+      "month": 3,
+      "n_events": 0
+    },
+    {
+      "month": 4,
+      "n_events": 0
+    },
+    {
+      "month": 5,
+      "n_events": 0
+    },
+    {
+      "month": 6,
+      "n_events": 0
+    },
+    {
+      "month": 7,
+      "n_events": 0
+    },
+    {
+      "month": 8,
+      "n_events": 0
+    },
+    {
+      "month": 9,
+      "n_events": 0
+    },
+    {
+      "month": 10,
+      "n_events": 58743
+    },
+    {
+      "month": 11,
+      "n_events": 0
+    },
+    {
+      "month": 12,
+      "n_events": 0
+    }
+  ],
+  "errors": []
+}
