@@ -160,5 +160,6 @@ confundir precisão do detector com prova de identidade de cada evento**.
 | Eventos, limiar, picos | `src/bioacoustics/detection.py` |
 | Janelas de 60 s | `src/bioacoustics/pipeline.py` |
 | Totais do lote | `reports/campo_resumo.json` |
+| Excel provisório (e-mail / tese) | `reports/relatorio_provisorio.xlsx` |
 | Como repetir o comando | `docs/REPRODUTIBILIDADE.md` |
 | Testes (vento, dueto, chunking, tempos) | `tests/test_detection.py` (`pytest`) |
