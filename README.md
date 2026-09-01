@@ -83,10 +83,12 @@ src/
     visualization.py  # spectrogram PNG for human validation
     report.py         # .xlsx report with hourly/monthly charts
     pipeline.py       # single-file orchestration
+    api.py            # dashboard HTTP API (report + upload)
   generate_sample.py  # synthetic test-audio generator
   detect.py           # CLI entrypoint
 tests/                # pipeline sanity tests
 data/audios/          # put real recordings here (git-ignored)
+data/uploads/         # POST /api/analyze scratch files (git-ignored)
 output/               # generated artifacts (git-ignored)
 ```
 
@@ -104,6 +106,14 @@ real call band and `threshold_k` so wind never becomes a false positive.
 - [ ] **Phase 3** — Claude API validation of ambiguous chunks (`anthropic` already vendored)
 - [ ] **Phase 4** — batch processing across all folders
 - [ ] **Phase 5** — React + Vite dashboard
+
+## Dashboard API
+
+```bash
+PYTHONPATH=src python -m bioacoustics.api   # http://127.0.0.1:8000
+```
+
+`GET /api/report` serves `output/resultado.json`. `POST /api/analyze` accepts multipart audio (`files` or `file`; `.wav`/`.flac`/`.ogg`/`.mp3`, max 10 files, 500 MB each), runs the pipeline, and writes the same JSON/xlsx reports. `GET /api/limits` returns those caps. Vite proxies `/api` to this server.
 
 ## Testing
 

@@ -8,6 +8,8 @@ venv/
 # Project data / outputs
 data/audios/*
 !data/audios/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep
 output/*
 !output/.gitkeep
 
