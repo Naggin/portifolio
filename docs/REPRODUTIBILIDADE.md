@@ -3,6 +3,8 @@
 Comandos e parâmetros para repetir a detecção. Valores abaixo são os
 **padrões de `DetectionConfig`** no código, não um resultado de campo.
 
+O que esses parâmetros **permitem afirmar** (e o que não): `docs/PRECISAO_E_LIMITES.md`.
+
 ## Ambiente
 
 - Python **3.11+** (ambiente desta análise: 3.12.3)

@@ -13,6 +13,10 @@ entre planilha e gráfico: a aluna fica com os dois.
 `output/` está no `.gitignore`. Copie `output/resultado.xlsx` para o pendrive
 ou Drive da tese. O CLI só grava Excel/JSON **quando termina todos os arquivos**.
 
+Como citar o número sem inflar o que ele significa (evento ≠ indivíduo;
+banda calibrada, não prova taxonómica em cada linha):
+`docs/PRECISAO_E_LIMITES.md`.
+
 **Estado deste lote (campo):** concluído em 2026-09-01. 75 arquivos, 104,7 h,
 149 962 eventos, `max_simultaneous` = 2, 0 erros. Resumo commitável:
 `reports/campo_resumo.json`. Totais oficiais também em `output/resultado.xlsx`

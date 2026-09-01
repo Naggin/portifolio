@@ -6,6 +6,9 @@ o que o código **faz de fato** (`src/bioacoustics/`). Não substitui a revisão
 bibliográfica. Números deste lote: `reports/campo_resumo.json` e
 `output/resultado.xlsx`.
 
+O que se pode afirmar com honestidade (calibração, restrições, o que **não**
+é censo de indivíduos): `docs/PRECISAO_E_LIMITES.md`.
+
 Implementação de referência:
 
 | Etapa | Arquivo |
@@ -170,6 +173,9 @@ processamento de sinal (Fases 0–2 e 4). Eventos duvidosos exigem conferência
 humana (PNG quando gerado, ou escuta pontual).
 
 ## 13. Limitações (importante para a tese)
+
+Lista curta abaixo. Frases prontas para a tese e o que **não** afirmar:
+`docs/PRECISAO_E_LIMITES.md`.
 
 1. **Evento ≠ indivíduo no açude.** Um macho que canta muitas vezes gera
    muitos eventos. Dois machos no mesmo pitch podem fundir-se em um evento.
