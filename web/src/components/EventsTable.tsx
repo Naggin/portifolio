@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react'
 import { formatClock, formatHz, formatInteger, formatSeconds } from '@/lib/format'
-import type { ReportEvent } from '@/lib/types'
+import type { DetectionReport } from '@/lib/types'
 
-export function EventsTable({ events }: { events: ReportEvent[] }) {
+export function EventsTable({ report }: { report: DetectionReport }) {
+  const events = report.events
+  const total = report.events_sample?.n_total ?? report.summary.n_events
+  const isSample = events.length < total
   const [query, setQuery] = useState('')
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -14,7 +17,8 @@ export function EventsTable({ events }: { events: ReportEvent[] }) {
     <section aria-labelledby="events-heading">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <h2 id="events-heading" className="text-base font-medium text-ink">
-          Eventos ({formatInteger(filtered.length)})
+          Eventos ({formatInteger(isSample ? total : filtered.length)}
+          {isSample ? `, amostra de ${formatInteger(filtered.length)}` : ''})
         </h2>
         <label className="text-sm text-muted">
           Filtrar arquivo
@@ -26,6 +30,13 @@ export function EventsTable({ events }: { events: ReportEvent[] }) {
           />
         </label>
       </div>
+      {isSample ? (
+        <p className="mb-3 text-sm text-muted">
+          A tabela mostra uma amostra ({formatInteger(events.length)} de {formatInteger(total)}
+          {report.events_sample ? `, ${report.events_sample.per_file} por arquivo` : ''}); o Excel
+          tem todos.
+        </p>
+      ) : null}
       <div className="max-h-[28rem] overflow-auto rounded-lg border border-line bg-surface">
         <table className="min-w-full text-left text-sm tabular-nums">
           <thead className="sticky top-0 border-b border-line bg-paper text-muted">

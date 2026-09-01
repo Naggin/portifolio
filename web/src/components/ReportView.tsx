@@ -10,7 +10,7 @@ export function ReportView({ loaded }: { loaded: LoadedReport }) {
       <SummaryCards report={loaded.report} />
       <HourMonthCharts byHour={loaded.report.by_hour} byMonth={loaded.report.by_month} />
       <FilesTable loaded={loaded} />
-      <EventsTable events={loaded.report.events} />
+      <EventsTable report={loaded.report} />
     </div>
   )
 }

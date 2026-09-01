@@ -177,7 +177,7 @@ export default function App() {
             <ReportView loaded={loaded} />
           </section>
         ) : !loadError ? (
-          <p className="text-sm text-muted">Carregando relatório de demonstração…</p>
+          <p className="text-sm text-muted">Carregando o relatório de campo…</p>
         ) : null}
       </main>
     </div>
@@ -185,6 +185,13 @@ export default function App() {
 }
 
 function SourceBanner({ source }: { source: ReportSource }) {
+  if (source === 'campo') {
+    return (
+      <p className="rounded border border-line bg-surface px-3 py-2 text-sm text-muted">
+        Exibindo o lote de campo (Drive). Suba a API para reanalisar gravações.
+      </p>
+    )
+  }
   if (source === 'demo') {
     return (
       <p className="rounded border border-line bg-surface px-3 py-2 text-sm text-muted">

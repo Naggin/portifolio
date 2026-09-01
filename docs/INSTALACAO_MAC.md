@@ -166,7 +166,7 @@ RAM: um Mac recente costuma bastar para o chunking de 60 s. O gargalo típico é
 
 ## 6. Dashboard React (opcional)
 
-Só depois de existir `output/resultado.json` (ou para ver o demo em `web/public/demo/`).
+Só depois de existir `output/resultado.json` (ou para ver o lote de campo em `web/public/campo/`).
 
 Node.js **20 ou superior**:
 
@@ -192,7 +192,7 @@ npm run dev
 # http://127.0.0.1:5173
 ```
 
-O Vite encaminha `/api` para `127.0.0.1:8000` (`web/vite.config.ts`). Sem a API, o painel cai no JSON de demonstração (áudio sintético, não é campo).
+O Vite encaminha `/api` para `127.0.0.1:8000` (`web/vite.config.ts`). Sem a API, o painel cai no JSON do lote de campo em `web/public/campo/resultado.json` (totais reais; a tabela de eventos é uma amostra).
 
 O upload pelo painel (`POST /api/analyze`) serve para poucos arquivos e **não** substitui o lote CLI em `data/field/`.
 

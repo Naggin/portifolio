@@ -142,16 +142,16 @@ O que aparece:
 
 - cartões: arquivos, eventos, máximo simultâneo, duração total;
 - gráficos de barras por hora e por mês (Recharts);
-- tabela de arquivos, com botão “Ver PNG”;
-- tabela de eventos, filtrável por nome de arquivo.
+- tabela de arquivos (espectrograma PNG só se o lote tiver gerado as imagens);
+- tabela de eventos, filtrável por nome de arquivo (amostra no JSON do painel).
 
-Se a API estiver fora ou `resultado.json` ainda não existir, o painel cai no
-**demo** em `web/public/demo/resultado.json` (áudio sintético, não é campo).
-Há também “Abrir resultado.json” para carregar um JSON baixado à mão.
+Se a API estiver fora, o painel cai no lote de campo em
+`web/public/campo/resultado.json` (75 arquivos, totais reais). A tabela de
+eventos é uma amostra; o Excel tem todos. Há também “Abrir resultado.json”
+para carregar um JSON baixado à mão.
 
-Neste lote de campo (`--no-spectrogram`), “Ver PNG” mostra
-“Espectrograma indisponível”: o arquivo não foi renderizado. Isso é
-esperado.
+Neste lote (`--no-spectrogram`) o painel **não** pede PNG — a coluna de
+espectrograma fica oculta. Upload pela API gera PNG em um lote novo.
 
 Upload pelo painel (`POST /api/analyze`) é para poucos arquivos curtos (máx.
 10, 2 GB cada) e **gera PNG**. Não substitua o lote CLI de 75 arquivos por

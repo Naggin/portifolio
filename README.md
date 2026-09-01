@@ -157,14 +157,16 @@ files are processed in 60 s overlapping chunks so they are never loaded whole.
 
 ## Dashboard (gráficos no navegador)
 
-Com `resultado.json` já gerado (ou o demo em `web/public/demo/`):
+Com `resultado.json` já gerado (ou o lote de campo em `web/public/campo/`):
 
 ```bash
 PYTHONPATH=src python -m bioacoustics.api   # http://127.0.0.1:8000
 cd web && npm install && npm run dev       # http://127.0.0.1:5173  (proxy /api → :8000)
 ```
 
-`GET /api/report` serves `output/resultado.json`. `POST /api/analyze` accepts multipart audio (`files` or `file`; `.wav`/`.flac`/`.ogg`/`.mp3`/`.m4a`, max 10 files, 2 GB each), runs the pipeline in 60 s chunks for long files, and writes the same JSON/xlsx reports **and** spectrogram PNGs. `GET /api/limits` returns those caps. Vite proxies `/api` to this server.
+`GET /api/report` serves `output/resultado.json`. Sem a API, o painel carrega o lote de campo em `web/public/campo/resultado.json` (totais reais; tabela de eventos amostrada — o Excel tem todos). Regenerar esse JSON com `python3 scripts/export_campo_dashboard.py`.
+
+`POST /api/analyze` accepts multipart audio (`files` or `file`; `.wav`/`.flac`/`.ogg`/`.mp3`/`.m4a`, max 10 files, 2 GB each), runs the pipeline in 60 s chunks for long files, and writes the same JSON/xlsx reports **and** spectrogram PNGs. `GET /api/limits` returns those caps. Vite proxies `/api` to this server.
 
 O upload do painel não substitui o lote CLI dos 75 arquivos de campo.
 
