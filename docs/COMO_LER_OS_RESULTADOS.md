@@ -5,13 +5,18 @@ entre planilha e gráfico: a aluna fica com os dois.
 
 | Produto | Onde | Para quê |
 | --- | --- | --- |
-| **Excel** | `output/resultado.xlsx` | Tabelas da tese, Excel, R, SPSS |
+| **Excel provisório** | `reports/relatorio_provisorio.xlsx` | Livro **partilhável** (e-mail, tese): resumo, campanhas, gráficos, recorte para ouvir. Marcado **PROVISÓRIO**. |
+| **Excel completo** | `output/resultado.xlsx` | Lista local de **todos** os eventos (~7 MB, gitignored) |
 | **Painel web** | `web/` lê `GET /api/report` (`resultado.json`) | Gráficos e tabelas no navegador |
 | **JSON** | `output/resultado.json` | Mesmo conteúdo do painel; arquivo intermediário |
-| **PNG** | `output/<nome>_spectrogram.png` | Conferência humana (este lote: **não gerado**) |
+| **PNG** | `output/<nome>_spectrogram.png` | Conferência humana: em arquivos longos, a **janela com picos**, não os primeiros 60 s. Tese: aba `Espectrogramas`. |
 
-`output/` está no `.gitignore`. Copie `output/resultado.xlsx` para o pendrive
-ou Drive da tese. O CLI só grava Excel/JSON **quando termina todos os arquivos**.
+O ficheiro para enviar e abrir na tese é
+`reports/relatorio_provisorio.xlsx` (versionado; regenerar com
+`python3 scripts/export_relatorio_provisorio.py`). A lista completa de
+eventos continua só na máquina local: `output/resultado.xlsx` (~7 MB).
+`output/` está no `.gitignore`. O CLI só grava o Excel/JSON completos
+**quando termina todos os arquivos**.
 
 Como citar o número sem inflar o que ele significa (evento ≠ indivíduo;
 banda calibrada, não prova taxonómica em cada linha):
@@ -19,8 +24,26 @@ banda calibrada, não prova taxonómica em cada linha):
 
 **Estado deste lote (campo):** concluído em 2026-09-01. 75 arquivos, 104,7 h,
 149 962 eventos, `max_simultaneous` = 2, 0 erros. Resumo commitável:
-`reports/campo_resumo.json`. Totais oficiais também em `output/resultado.xlsx`
-(máquina local, não no Git).
+`reports/campo_resumo.json`. Planilha provisória versionada:
+`reports/relatorio_provisorio.xlsx`. Totais oficiais também em
+`output/resultado.xlsx` (máquina local, não no Git).
+
+## 0. Excel provisório — `relatorio_provisorio.xlsx`
+
+Livro pequeno para partilhar. Abas em português, faixa **PROVISÓRIO** no
+topo: `Leia primeiro`, `Resumo`, `Campanhas`, `Arquivos`, `Por hora`,
+`Por mês`, `Ouvir`, `Espectrogramas`, `Parâmetros`. Não traz as 149 962
+linhas de eventos.
+
+A aba `Ouvir` é o recorte de validação já escolhido:
+`10_10_25 açude 1` / `R20241012-041002.WAV`, seek **30:45** (60 s),
+relógio 04:40:47–04:41:47. Não começar pelo WAV das 9:10
+(`R20241012-091022.WAV`). Se o script correr com `output/resultado.json`
+local, a mesma aba lista os 64 eventos desse minuto.
+
+A aba `Espectrogramas` embute esse minuto (e um zoom no pico mais forte)
+com os eventos marcados. É validação, não o método de contagem. PNG em
+`reports/espectrogramas/`.
 
 ## 1. Excel — `resultado.xlsx`
 
@@ -196,7 +219,9 @@ Comando deste lote:
 PYTHONPATH=src python3 src/detect.py data/field --no-spectrogram
 ```
 
-Arquivos de várias horas, mesmo com PNG, só mostram os primeiros 60 s.
+Arquivos de várias horas, mesmo com PNG, mostram a **janela de 60 s com
+mais picos**, não os primeiros 60 s. A tese usa a aba `Espectrogramas`
+(`reports/espectrogramas/`), o recorte 30:45 da madrugada.
 
 ## 6. Cópia enxuta no repositório
 
@@ -204,4 +229,6 @@ Arquivos de várias horas, mesmo com PNG, só mostram os primeiros 60 s.
 A cópia enxuta (por arquivo: campanha, nome, `recorded_at`, duração, `n_events`,
 `max_simultaneous`, eventos/hora — **sem** `band_energy` nem a lista de
 eventos) está em `reports/campo_resumo.json`, gerada por
-`scripts/summarize_campo.py`.
+`scripts/summarize_campo.py`. O Excel **provisório** partilhável
+(`reports/relatorio_provisorio.xlsx`) sai de
+`python3 scripts/export_relatorio_provisorio.py`.

@@ -13,7 +13,7 @@ from pathlib import Path
 from bioacoustics.config import AUDIO_EXTENSIONS, DetectionConfig
 from bioacoustics.pipeline import PipelineResult, process_file
 from bioacoustics.report import write_json_report, write_report
-from bioacoustics.visualization import save_spectrogram
+from bioacoustics.visualization import save_file_spectrograms
 
 _AUDIO_EXTS = set(AUDIO_EXTENSIONS)
 
@@ -76,9 +76,17 @@ def main() -> None:
             )
 
         if not args.no_spectrogram:
-            png = out_dir / f"{path.stem}_spectrogram.png"
-            save_spectrogram(r.detection, cfg, png, title=f"{path.name} — detected calls")
-            print(f"  spectrogram : {png}")
+            written = save_file_spectrograms(
+                path,
+                r.detection.events,
+                r.detection.duration_s,
+                cfg,
+                out_dir,
+                title=None,
+                result=r.detection,
+            )
+            for item in written:
+                print(f"  spectrogram : {item.path}  ({item.kind}, t={item.t0:.1f}s)")
 
     report_path = out_dir / args.report
     write_report(results, report_path)

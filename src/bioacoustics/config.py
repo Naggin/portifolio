@@ -63,7 +63,7 @@ class DetectionConfig:
     # Process in overlapping windows instead of loading the whole recording.
     chunk_duration_s: float = 60.0
     chunk_overlap_s: float = 3.0  # 2 * edge_guard_s
-    # Full spectrogram PNGs of multi-hour files are unusable; preview only.
+    # PNG length for long files: densest window with peaks, not the first 60 s.
     spectrogram_preview_s: float = 60.0
 
     @property

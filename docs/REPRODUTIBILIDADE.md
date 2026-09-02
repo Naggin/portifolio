@@ -61,6 +61,7 @@ Cópia enxuta para o Git (sem lista de eventos nem `band_energy`):
 
 ```bash
 python3 scripts/summarize_campo.py   # → reports/campo_resumo.json
+python3 scripts/export_relatorio_provisorio.py   # → reports/relatorio_provisorio.xlsx
 ```
 
 Bandeiras úteis:
@@ -104,7 +105,7 @@ Fonte: `src/bioacoustics/config.py`. Calibração: `CEAES 2.m4a` (Fase 2).
 | `edge_guard_s` | 1.5 | margem morta nas pontas da janela |
 | `chunk_duration_s` | 60 | arquivos longos |
 | `chunk_overlap_s` | 3 | 2 × `edge_guard_s` |
-| `spectrogram_preview_s` | 60 | PNG só da primeira janela |
+| `spectrogram_preview_s` | 60 | PNG = janela com mais picos, não t=0 |
 
 ## O que não entra no Git
 
@@ -115,4 +116,5 @@ Fonte: `src/bioacoustics/config.py`. Calibração: `CEAES 2.m4a` (Fase 2).
 - `output/` — Excel, JSON e PNG gerados
 
 O método está no código e em `docs/METODOS.md`. Os números deste lote estão em
-`output/resultado.xlsx` (local) e na cópia enxuta `reports/campo_resumo.json`.
+`output/resultado.xlsx` (local), na cópia enxuta `reports/campo_resumo.json`
+e no Excel provisório `reports/relatorio_provisorio.xlsx`.
