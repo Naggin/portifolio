@@ -1,17 +1,28 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Loader2 } from 'lucide-react'
+import { AUDIO_MISSING_MESSAGE, fetchEventSpectrogram } from '@/lib/eventSpectrogram'
 import { formatClock, formatHz, formatInteger, formatSeconds } from '@/lib/format'
-import type { DetectionReport } from '@/lib/types'
+import type { DetectionReport, ReportEvent } from '@/lib/types'
+
+function eventRowKey(event: ReportEvent, index: number): string {
+  return `${event.file}-${event.event}-${index}`
+}
 
 export function EventsTable({ report }: { report: DetectionReport }) {
   const events = report.events
   const total = report.events_sample?.n_total ?? report.summary.n_events
   const isSample = events.length < total
   const [query, setQuery] = useState('')
+  const [openKey, setOpenKey] = useState<string | null>(null)
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
     if (!needle) return events
     return events.filter((event) => event.file.toLowerCase().includes(needle))
   }, [events, query])
+  const openEvent = useMemo(() => {
+    if (!openKey) return null
+    return filtered.find((event, index) => eventRowKey(event, index) === openKey) ?? null
+  }, [filtered, openKey])
 
   return (
     <section aria-labelledby="events-heading">
@@ -37,6 +48,17 @@ export function EventsTable({ report }: { report: DetectionReport }) {
           tem todos.
         </p>
       ) : null}
+      <p className="mb-3 text-sm text-muted">
+        <strong className="font-medium text-ink">Ver espectrograma</strong> gera, sob pedido, a
+        captura desta linha (áudio local; não são 149&nbsp;962 PNG no Git). A marca verde é o{' '}
+        <strong className="font-medium text-ink">Pico</strong> da tabela, não uma re-detecção.{' '}
+        <em>Indiv.</em> = cantores simultâneos estimados, não um animal etiquetado. Se a API
+        estiver desligada, use os{' '}
+        <a href="/espectrogramas/" className="text-accent hover:underline">
+          espectrogramas de validação
+        </a>{' '}
+        (recorte 30:45), não como imagem de cada linha.
+      </p>
       <div className="max-h-[28rem] overflow-auto rounded-lg border border-line bg-surface">
         <table className="min-w-full text-left text-sm tabular-nums">
           <thead className="sticky top-0 border-b border-line bg-paper text-muted">
@@ -51,26 +73,141 @@ export function EventsTable({ report }: { report: DetectionReport }) {
               <th className="px-3 py-2 font-medium">Energia</th>
               <th className="px-3 py-2 font-medium">Indiv.</th>
               <th className="px-3 py-2 font-medium">Duração</th>
+              <th className="px-3 py-2 font-medium">Espectrograma</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((event, index) => (
-              <tr key={`${event.file}-${event.event}-${index}`} className="border-b border-line last:border-0">
-                <td className="px-3 py-2 text-ink">{event.file}</td>
-                <td className="px-3 py-2 text-muted">{formatClock(event.recorded_at)}</td>
-                <td className="px-3 py-2">{event.event}</td>
-                <td className="px-3 py-2">{formatSeconds(event.start_s)}</td>
-                <td className="px-3 py-2">{formatSeconds(event.end_s)}</td>
-                <td className="px-3 py-2">{formatSeconds(event.peak_time_s)}</td>
-                <td className="px-3 py-2">{formatHz(event.peak_freq_hz)}</td>
-                <td className="px-3 py-2">{event.energy.toFixed(3)}</td>
-                <td className="px-3 py-2">{event.n_callers}</td>
-                <td className="px-3 py-2">{formatSeconds(event.duration_s)}</td>
-              </tr>
-            ))}
+            {filtered.map((event, index) => {
+              const rowKey = eventRowKey(event, index)
+              const expanded = openKey === rowKey
+              return (
+                <tr
+                  key={rowKey}
+                  className={`border-b border-line last:border-0 ${expanded ? 'bg-accent-soft' : ''}`}
+                >
+                  <td className="px-3 py-2 text-ink">{event.file}</td>
+                  <td className="px-3 py-2 text-muted">{formatClock(event.recorded_at)}</td>
+                  <td className="px-3 py-2">{event.event}</td>
+                  <td className="px-3 py-2">{formatSeconds(event.start_s)}</td>
+                  <td className="px-3 py-2">{formatSeconds(event.end_s)}</td>
+                  <td className="px-3 py-2">{formatSeconds(event.peak_time_s)}</td>
+                  <td className="px-3 py-2">{formatHz(event.peak_freq_hz)}</td>
+                  <td className="px-3 py-2">{event.energy.toFixed(3)}</td>
+                  <td className="px-3 py-2">{event.n_callers}</td>
+                  <td className="px-3 py-2">{formatSeconds(event.duration_s)}</td>
+                  <td className="px-3 py-2">
+                    <button
+                      type="button"
+                      className="text-accent underline-offset-2 hover:underline"
+                      aria-expanded={expanded}
+                      aria-controls="event-spectrogram-panel"
+                      aria-label={`Ver espectrograma do evento ${event.event} de ${event.file}`}
+                      onClick={() => setOpenKey(expanded ? null : rowKey)}
+                    >
+                      {expanded ? 'Ocultar' : 'Ver espectrograma'}
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
+      {openEvent ? (
+        <div id="event-spectrogram-panel" className="mt-3 rounded-lg border border-line bg-surface px-3 py-3">
+          <EventSpectrogramPanel event={openEvent} />
+        </div>
+      ) : null}
     </section>
+  )
+}
+
+function EventSpectrogramPanel({ event }: { event: ReportEvent }) {
+  const [src, setSrc] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [apiDown, setApiDown] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const requestKey = [
+    event.file,
+    event.event,
+    event.start_s,
+    event.end_s,
+    event.peak_time_s,
+    event.peak_freq_hz,
+    event.n_callers,
+  ].join('|')
+
+  useEffect(() => {
+    const controller = new AbortController()
+    let objectUrl: string | null = null
+    setLoading(true)
+    setError(null)
+    setApiDown(false)
+    setSrc(null)
+
+    void fetchEventSpectrogram(event, controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted) return
+        if (result.ok) {
+          objectUrl = result.objectUrl
+          setSrc(result.objectUrl)
+          return
+        }
+        setApiDown(Boolean(result.apiDown))
+        setError(result.message)
+      })
+      .catch((caught: unknown) => {
+        if (caught instanceof DOMException && caught.name === 'AbortError') return
+        setError(AUDIO_MISSING_MESSAGE)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => {
+      controller.abort()
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [requestKey, event])
+
+  const caption = `${event.file} — evento ${event.event} — pico ${formatSeconds(event.peak_time_s)}, ${formatHz(event.peak_freq_hz)}`
+
+  return (
+    <figure className="max-w-4xl">
+      {loading ? (
+        <p className="inline-flex items-center gap-2 text-sm text-accent" role="status">
+          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          A gerar o espectrograma desta captura…
+        </p>
+      ) : null}
+      {error ? (
+        <div
+          className="rounded border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+          role="alert"
+        >
+          <p>{error}</p>
+          {apiDown ? (
+            <p className="mt-1">
+              <a href="/espectrogramas/" className="underline underline-offset-2">
+                Abrir espectrogramas de validação (30:45)
+              </a>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      {src ? (
+        <img
+          src={src}
+          alt={caption}
+          className="mt-1 w-full rounded border border-line bg-paper object-contain"
+        />
+      ) : null}
+      <figcaption className="mt-2 text-sm text-muted">
+        {event.file} — evento {event.event} — pico {formatSeconds(event.peak_time_s)},{' '}
+        {formatHz(event.peak_freq_hz)}. cantores simultâneos estimados: {event.n_callers}. A marca
+        verde (linha + círculo) é o <span className="text-ink">Pico</span> desta linha da tabela, não
+        identidade da espécie.
+      </figcaption>
+    </figure>
   )
 }

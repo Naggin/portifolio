@@ -167,7 +167,7 @@ PYTHONPATH=src python -m bioacoustics.api   # http://127.0.0.1:8000
 cd web && npm install && npm run dev       # http://127.0.0.1:5173  (proxy /api → :8000)
 ```
 
-`GET /api/report` serves `output/resultado.json`. Sem a API, o painel carrega o lote de campo em `web/public/campo/resultado.json` (totais reais; tabela de eventos amostrada — o Excel tem todos). Regenerar esse JSON com `python3 scripts/export_campo_dashboard.py`.
+`GET /api/report` serves `output/resultado.json`. `GET /api/event-spectrogram` gera o PNG de **uma linha** da tabela Eventos a partir do áudio local (cache em `output/event_spectrograms/`, gitignored). Sem a API, o painel carrega o lote de campo em `web/public/campo/resultado.json` (totais reais; tabela de eventos amostrada — o Excel tem todos). Regenerar esse JSON com `python3 scripts/export_campo_dashboard.py`.
 
 `POST /api/analyze` accepts multipart audio (`files` or `file`; `.wav`/`.flac`/`.ogg`/`.mp3`/`.m4a`, max 10 files, 2 GB each), runs the pipeline in 60 s chunks for long files, and writes the same JSON/xlsx reports **and** spectrogram PNGs. `GET /api/limits` returns those caps. Vite proxies `/api` to this server.
 

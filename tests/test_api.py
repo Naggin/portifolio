@@ -9,6 +9,7 @@ import threading
 from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlencode
 
 import numpy as np
 import pytest
@@ -52,9 +53,11 @@ def _encode_multipart(
 def api_http(tmp_path: Path):
     output_dir = tmp_path / "output"
     upload_dir = tmp_path / "uploads"
+    field_dir = tmp_path / "field"
+    field_dir.mkdir()
     httpd = ThreadingHTTPServer(
         ("127.0.0.1", 0),
-        api.make_handler(output_dir, upload_dir),
+        api.make_handler(output_dir, upload_dir, field_dir=field_dir),
     )
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
@@ -63,6 +66,7 @@ def api_http(tmp_path: Path):
             "port": httpd.server_address[1],
             "output_dir": output_dir,
             "upload_dir": upload_dir,
+            "field_dir": field_dir,
         }
     finally:
         httpd.shutdown()
@@ -213,3 +217,111 @@ def test_analyze_accepts_file_field_and_unparsed_name(api_http):
     assert payload["summary"]["n_files"] == 1
     cfg = DetectionConfig()
     assert payload["config"]["sample_rate"] == cfg.sample_rate
+
+
+def test_parse_event_spectrogram_request_rejects_bad_input():
+    with pytest.raises(api.AnalyzeError):
+        api.parse_event_spectrogram_request({})
+    with pytest.raises(api.AnalyzeError, match="basename"):
+        api.parse_event_spectrogram_request(
+            {
+                "file": ["../secret.wav"],
+                "start_s": ["1"],
+                "end_s": ["2"],
+                "peak_time_s": ["1.5"],
+                "peak_freq_hz": ["2700"],
+            }
+        )
+    with pytest.raises(api.AnalyzeError, match="end_s"):
+        api.parse_event_spectrogram_request(
+            {
+                "file": ["clip.wav"],
+                "start_s": ["2"],
+                "end_s": ["1"],
+                "peak_time_s": ["1.5"],
+                "peak_freq_hz": ["2700"],
+            }
+        )
+
+
+def test_event_spectrogram_missing_audio(api_http):
+    port = api_http["port"]
+    qs = urlencode(
+        {
+            "file": "missing.wav",
+            "start_s": "2.276",
+            "end_s": "2.368",
+            "peak_time_s": "2.299",
+            "peak_freq_hz": "2713.2",
+        }
+    )
+    status, raw, headers = _request(port, "GET", f"/api/event-spectrogram?{qs}")
+    assert status == 404
+    payload = json.loads(raw)
+    assert payload["code"] == "audio_not_found"
+    assert "não está nesta máquina" in payload["error"]
+    assert headers["content-type"].startswith("application/json")
+
+
+def test_event_spectrogram_rejects_missing_params(api_http):
+    port = api_http["port"]
+    status, raw, _ = _request(port, "GET", "/api/event-spectrogram?file=clip.wav")
+    assert status == 400
+    assert "missing" in json.loads(raw)["error"]
+
+
+def test_event_spectrogram_png_for_known_peak(api_http):
+    """On-demand PNG for a short in-band tone; marks the table row, does not re-detect."""
+    from io import BytesIO
+
+    from PIL import Image
+
+    field_dir: Path = api_http["field_dir"]
+    campaign = field_dir / "10_10_25 açude 1"
+    campaign.mkdir()
+    wav_path = campaign / "R20241011-180923.WAV"
+    sr = 22_050
+    duration_s = 6.0
+    n = int(sr * duration_s)
+    t = np.arange(n) / sr
+    audio = (0.01 * np.random.default_rng(3).standard_normal(n)).astype(np.float32)
+    tone = (t >= 2.20) & (t < 2.40)
+    audio[tone] += (0.45 * np.sin(2 * np.pi * 2713.0 * t[tone])).astype(np.float32)
+    sf.write(str(wav_path), audio, sr, subtype="PCM_16")
+
+    qs = urlencode(
+        {
+            "file": "R20241011-180923.WAV",
+            "start_s": "2.276",
+            "end_s": "2.368",
+            "peak_time_s": "2.299",
+            "peak_freq_hz": "2713.2",
+            "n_callers": "1",
+            "event": "1",
+        }
+    )
+    status, raw, headers = _request(
+        api_http["port"], "GET", f"/api/event-spectrogram?{qs}", timeout=60.0
+    )
+    assert status == 200, raw[:500]
+    assert headers["content-type"] == "image/png"
+    assert len(raw) > 2000
+    image = Image.open(BytesIO(raw))
+    assert image.format == "PNG"
+    assert image.size[0] > 100 and image.size[1] > 80
+    assert headers["x-peak-time-s"].startswith("2.299")
+    assert float(headers["x-peak-freq-hz"]) == pytest.approx(2713.2, abs=0.05)
+    window_start = float(headers["x-window-start-s"])
+    window_dur = float(headers["x-window-duration-s"])
+    assert window_start == pytest.approx(2.276 - 1.25, abs=0.05)
+    assert window_dur > 2.0
+    assert headers["x-event-file"] == "R20241011-180923.WAV"
+    cached = list((api_http["output_dir"] / "event_spectrograms").glob("*.png"))
+    assert cached and cached[0].stat().st_size > 2000
+
+    # Second request hits the cache (same PNG).
+    status2, raw2, _ = _request(
+        api_http["port"], "GET", f"/api/event-spectrogram?{qs}", timeout=30.0
+    )
+    assert status2 == 200
+    assert raw2 == raw
