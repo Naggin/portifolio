@@ -9,6 +9,9 @@ from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, Reference
+from openpyxl.chart.label import DataLabelList
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 
 from .config import DetectionConfig
 from .pipeline import PipelineResult
@@ -16,6 +19,25 @@ from .pipeline import PipelineResult
 SPECIES_NAME = "Sphaenorhynchus caramaschii"
 SPECIES_COMMON_NAME = "perereca-de-banhado"
 ENERGY_SERIES_POINTS = 400
+
+MONTH_LABELS = (
+    "jan", "fev", "mar", "abr", "mai", "jun",
+    "jul", "ago", "set", "out", "nov", "dez",
+)
+
+HEADER_FILL = PatternFill("solid", fgColor="1F4E79")
+HEADER_FONT = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
+NOTE_FILL = PatternFill("solid", fgColor="FFF2CC")
+NOTE_FONT = Font(name="Calibri", italic=True, size=10, color="7F6000")
+BODY_FONT = Font(name="Calibri", size=11)
+PEAK_FILL = PatternFill("solid", fgColor="C6EFCE")
+ZERO_FILL = PatternFill("solid", fgColor="F2F2F2")
+THIN = Border(
+    left=Side(style="thin", color="D9D9D9"),
+    right=Side(style="thin", color="D9D9D9"),
+    top=Side(style="thin", color="D9D9D9"),
+    bottom=Side(style="thin", color="D9D9D9"),
+)
 
 
 def _hourly_counts(results: list[PipelineResult]) -> list[dict[str, int]]:
@@ -136,20 +158,79 @@ def write_report(results: list[PipelineResult], out_path: str | Path) -> Path:
     wb = Workbook()
 
     _write_events_sheet(wb.active, results)
-    _write_files_sheet(wb.create_sheet("Files"), results)
-    _write_hourly_sheet(wb.create_sheet("By hour"), results)
-    _write_monthly_sheet(wb.create_sheet("By month"), results)
+    _write_files_sheet(wb.create_sheet("Arquivos"), results)
+    _write_hourly_sheet(wb.create_sheet("Por hora"), results)
+    _write_monthly_sheet(wb.create_sheet("Por mês"), results)
 
     wb.save(out_path)
     return out_path
 
 
+def _note_row(ws, row: int, n_cols: int, text: str) -> None:
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=n_cols)
+    cell = ws.cell(row, 1, text)
+    cell.fill = NOTE_FILL
+    cell.font = NOTE_FONT
+    cell.alignment = Alignment(wrap_text=True, vertical="center")
+    ws.row_dimensions[row].height = 40
+
+
+def _headers(ws, row: int, titles: list[str]) -> None:
+    for col, title in enumerate(titles, start=1):
+        cell = ws.cell(row, col, title)
+        cell.fill = HEADER_FILL
+        cell.font = HEADER_FONT
+        cell.alignment = Alignment(wrap_text=True, vertical="center")
+        cell.border = THIN
+    ws.freeze_panes = f"A{row + 1}"
+
+
+def _bar_chart(
+    ws,
+    title: str,
+    x_title: str,
+    header_row: int,
+    n_rows: int,
+    anchor: str = "E3",
+) -> None:
+    chart = BarChart()
+    chart.type = "col"
+    chart.title = title
+    chart.x_axis.title = x_title
+    chart.y_axis.title = "Eventos"
+    chart.style = 10
+    chart.legend = None
+    chart.y_axis.numFmt = "#,##0"
+    data = Reference(ws, min_col=2, min_row=header_row, max_row=header_row + n_rows)
+    cats = Reference(ws, min_col=1, min_row=header_row + 1, max_row=header_row + n_rows)
+    chart.add_data(data, titles_from_data=True)
+    chart.set_categories(cats)
+    chart.width = 18
+    chart.height = 10
+    if chart.series:
+        chart.series[0].graphicalProperties.solidFill = "2F5D50"
+        d_lbls = DataLabelList()
+        d_lbls.showVal = True
+        d_lbls.numFmt = "#,##0"
+        chart.series[0].dLbls = d_lbls
+    ws.add_chart(chart, anchor)
+
+
 def _write_events_sheet(ws, results: list[PipelineResult]) -> None:
-    ws.title = "Events"
-    ws.append([
-        "file", "recorded_at", "event", "start_s", "end_s",
-        "peak_time_s", "peak_freq_hz", "energy", "n_callers",
-    ])
+    ws.title = "Eventos"
+    titles = [
+        "Arquivo", "Gravado em", "Nº", "Início (s)", "Fim (s)",
+        "Pico (s)", "Freq. pico (Hz)", "Energia", "Indiv. (est.)",
+    ]
+    _note_row(
+        ws,
+        1,
+        len(titles),
+        "Eventos acústicos na banda calibrada — não são machos. "
+        "Pico = instante do pico; Indiv. = picos simultâneos estimados (máx. ~2), não ID.",
+    )
+    _headers(ws, 2, titles)
+    row = 3
     for r in results:
         recorded = r.recorded_at.isoformat() if r.recorded_at else ""
         for i, ev in enumerate(r.detection.events, start=1):
@@ -159,12 +240,22 @@ def _write_events_sheet(ws, results: list[PipelineResult]) -> None:
                 round(ev.peak_time_s, 3), round(ev.peak_freq_hz, 1),
                 round(ev.energy, 3), ev.n_callers,
             ])
+            row += 1
+    for col, width in zip(range(1, len(titles) + 1), [28, 22, 6, 12, 12, 12, 14, 10, 12]):
+        ws.column_dimensions[get_column_letter(col)].width = width
 
 
 def _write_files_sheet(ws, results: list[PipelineResult]) -> None:
-    ws.append([
-        "file", "recorded_at", "duration_s", "n_events", "max_simultaneous",
-    ])
+    titles = [
+        "Arquivo", "Gravado em", "Duração (s)", "Eventos", "Máx. simultâneos",
+    ]
+    _note_row(
+        ws,
+        1,
+        len(titles),
+        "Uma linha por gravação. Eventos = picos na banda; Máx. simultâneos = teto estrutural (~2).",
+    )
+    _headers(ws, 2, titles)
     for r in results:
         recorded = r.recorded_at.isoformat() if r.recorded_at else ""
         ws.append([
@@ -174,32 +265,71 @@ def _write_files_sheet(ws, results: list[PipelineResult]) -> None:
 
 
 def _write_hourly_sheet(ws, results: list[PipelineResult]) -> None:
-    ws.append(["hour", "n_events"])
-    for row in _hourly_counts(results):
-        ws.append([row["hour"], row["n_events"]])
-
-    chart = BarChart()
-    chart.title = "Calls by hour of day"
-    chart.x_axis.title = "Hour"
-    chart.y_axis.title = "Calls"
-    data = Reference(ws, min_col=2, min_row=1, max_row=25)
-    cats = Reference(ws, min_col=1, min_row=2, max_row=25)
-    chart.add_data(data, titles_from_data=True)
-    chart.set_categories(cats)
-    ws.add_chart(chart, "D2")
+    titles = ["Hora", "Eventos", "Nota"]
+    _note_row(
+        ws,
+        1,
+        3,
+        "Hora = INÍCIO do arquivo (nome RYYYYMMDD-HHMMSS), não o relógio de cada canto. "
+        "Arquivos sem data no nome não entram. Zeros às 11–13 h = nenhum WAV a começar então.",
+    )
+    _headers(ws, 2, titles)
+    peak_hours = {4, 5}
+    zero_hours = {11, 12, 13}
+    for item in _hourly_counts(results):
+        hour = int(item["hour"])
+        n_events = int(item["n_events"])
+        if hour in peak_hours:
+            note = "pico (início de arquivo neste bloco)"
+        elif hour in zero_hours:
+            note = "nenhum WAV a começar nesta hora"
+        elif n_events == 0:
+            note = "sem arquivos com data nesta hora"
+        else:
+            note = ""
+        ws.append([f"{hour:02d}h", n_events, note])
+        row = ws.max_row
+        fill = PEAK_FILL if hour in peak_hours else ZERO_FILL if hour in zero_hours else None
+        if fill:
+            for col in range(1, 4):
+                ws.cell(row, col).fill = fill
+    _bar_chart(
+        ws,
+        "Eventos por hora (início da gravação)",
+        "Hora (início do arquivo)",
+        header_row=2,
+        n_rows=24,
+    )
 
 
 def _write_monthly_sheet(ws, results: list[PipelineResult]) -> None:
-    ws.append(["month", "n_events"])
-    for row in _monthly_counts(results):
-        ws.append([row["month"], row["n_events"]])
-
-    chart = BarChart()
-    chart.title = "Calls by month"
-    chart.x_axis.title = "Month"
-    chart.y_axis.title = "Calls"
-    data = Reference(ws, min_col=2, min_row=1, max_row=13)
-    cats = Reference(ws, min_col=1, min_row=2, max_row=13)
-    chart.add_data(data, titles_from_data=True)
-    chart.set_categories(cats)
-    ws.add_chart(chart, "D2")
+    titles = ["Mês", "Eventos", "Nota"]
+    _note_row(
+        ws,
+        1,
+        3,
+        "Mês = recorded_at do INÍCIO do arquivo. MP3s sem data no nome não entram neste gráfico.",
+    )
+    _headers(ws, 2, titles)
+    for item in _monthly_counts(results):
+        month = int(item["month"])
+        n_events = int(item["n_events"])
+        label = f"{month:02d} {MONTH_LABELS[month - 1]}"
+        if n_events == 0:
+            note = "sem arquivos com data neste mês"
+            fill = ZERO_FILL
+        else:
+            note = ""
+            fill = None
+        ws.append([label, n_events, note])
+        row = ws.max_row
+        if fill:
+            for col in range(1, 4):
+                ws.cell(row, col).fill = fill
+    _bar_chart(
+        ws,
+        "Eventos por mês (início da gravação)",
+        "Mês (início do arquivo)",
+        header_row=2,
+        n_rows=12,
+    )
