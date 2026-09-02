@@ -22,7 +22,7 @@ sys.path.insert(0, str(SRC))
 from bioacoustics.config import DetectionConfig  # noqa: E402
 from bioacoustics.pipeline import process_file  # noqa: E402
 from bioacoustics.report import write_json_report  # noqa: E402
-from bioacoustics.visualization import save_spectrogram  # noqa: E402
+from bioacoustics.visualization import save_file_spectrograms  # noqa: E402
 from generate_sample import synthesize  # noqa: E402
 
 DEMO_DIR = ROOT / "web" / "public" / "demo"
@@ -55,9 +55,17 @@ def main() -> None:
         print(f"Processing {name} ...")
         result = process_file(wav, cfg)
         results.append(result)
-        png_name = f"{wav.stem}_spectrogram.png"
-        save_spectrogram(result.detection, cfg, staging / png_name, title=f"{name} — cantos detectados")
-        shutil.copy2(staging / png_name, DEMO_DIR / png_name)
+        written = save_file_spectrograms(
+            wav,
+            result.detection.events,
+            result.detection.duration_s,
+            cfg,
+            staging,
+            title=f"{name} — cantos detectados",
+            result=result.detection,
+            write_zoom=False,
+        )
+        shutil.copy2(written[0].path, DEMO_DIR / written[0].path.name)
         print(f"  {result.detection.n_events} calls, max {result.detection.max_simultaneous} simultaneous")
 
     json_path = DEMO_DIR / "resultado.json"

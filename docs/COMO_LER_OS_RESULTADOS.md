@@ -9,7 +9,7 @@ entre planilha e gráfico: a aluna fica com os dois.
 | **Excel completo** | `output/resultado.xlsx` | Lista local de **todos** os eventos (~7 MB, gitignored) |
 | **Painel web** | `web/` lê `GET /api/report` (`resultado.json`) | Gráficos e tabelas no navegador |
 | **JSON** | `output/resultado.json` | Mesmo conteúdo do painel; arquivo intermediário |
-| **PNG** | `output/<nome>_spectrogram.png` | Conferência humana (este lote: **não gerado**) |
+| **PNG** | `output/<nome>_spectrogram.png` | Conferência humana: em arquivos longos, a **janela com picos**, não os primeiros 60 s. Tese: aba `Espectrogramas`. |
 
 O ficheiro para enviar e abrir na tese é
 `reports/relatorio_provisorio.xlsx` (versionado; regenerar com
@@ -32,13 +32,18 @@ banda calibrada, não prova taxonómica em cada linha):
 
 Livro pequeno para partilhar. Abas em português, faixa **PROVISÓRIO** no
 topo: `Leia primeiro`, `Resumo`, `Campanhas`, `Arquivos`, `Por hora`,
-`Por mês`, `Ouvir`, `Parâmetros`. Não traz as 149 962 linhas de eventos.
+`Por mês`, `Ouvir`, `Espectrogramas`, `Parâmetros`. Não traz as 149 962
+linhas de eventos.
 
 A aba `Ouvir` é o recorte de validação já escolhido:
 `10_10_25 açude 1` / `R20241012-041002.WAV`, seek **30:45** (60 s),
 relógio 04:40:47–04:41:47. Não começar pelo WAV das 9:10
 (`R20241012-091022.WAV`). Se o script correr com `output/resultado.json`
 local, a mesma aba lista os 64 eventos desse minuto.
+
+A aba `Espectrogramas` embute esse minuto (e um zoom no pico mais forte)
+com os eventos marcados. É validação, não o método de contagem. PNG em
+`reports/espectrogramas/`.
 
 ## 1. Excel — `resultado.xlsx`
 
@@ -214,7 +219,9 @@ Comando deste lote:
 PYTHONPATH=src python3 src/detect.py data/field --no-spectrogram
 ```
 
-Arquivos de várias horas, mesmo com PNG, só mostram os primeiros 60 s.
+Arquivos de várias horas, mesmo com PNG, mostram a **janela de 60 s com
+mais picos**, não os primeiros 60 s. A tese usa a aba `Espectrogramas`
+(`reports/espectrogramas/`), o recorte 30:45 da madrugada.
 
 ## 6. Cópia enxuta no repositório
 

@@ -79,6 +79,8 @@ def _process_chunked(path: Path, cfg: DetectionConfig, duration_s: float) -> Det
         if np.any(keep):
             energy_parts.append(np.asarray(chunk.band_energy)[keep])
             time_parts.append(np.asarray(chunk.times)[keep] + start)
+        # First-chunk STFT is kept only so DetectionResult still has a
+        # spectrogram matrix; PNG validation reloads the densest peak window.
         if preview is None:
             preview = chunk
         chunk_index += 1

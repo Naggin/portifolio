@@ -21,6 +21,7 @@ from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, Reference
+from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
@@ -35,6 +36,7 @@ from bioacoustics.config import DetectionConfig  # noqa: E402
 DEFAULT_RESUMO = ROOT / "reports" / "campo_resumo.json"
 DEFAULT_OUT = ROOT / "reports" / "relatorio_provisorio.xlsx"
 DEFAULT_RESULTADO = ROOT / "output" / "resultado.json"
+DEFAULT_SPEC_DIR = ROOT / "reports" / "espectrogramas"
 
 SHEET_NAMES = (
     "Leia primeiro",
@@ -44,6 +46,7 @@ SHEET_NAMES = (
     "Por hora",
     "Por mês",
     "Ouvir",
+    "Espectrogramas",
     "Parâmetros",
 )
 
@@ -90,7 +93,7 @@ PARAM_NOTES: dict[str, str] = {
     "edge_guard_s": "Margem morta no início/fim de cada janela (filtro fase zero).",
     "chunk_duration_s": "Duração da janela em arquivos longos.",
     "chunk_overlap_s": "Sobreposição entre janelas (2 × edge_guard_s).",
-    "spectrogram_preview_s": "PNG só da primeira janela; este lote usou --no-spectrogram.",
+    "spectrogram_preview_s": "PNG de arquivos longos = janela de 60 s com mais picos, não os primeiros 60 s. Validação da tese: aba Espectrogramas.",
 }
 
 BANNER_FILL = PatternFill("solid", fgColor="C65911")
@@ -120,14 +123,43 @@ BANNER_TEXT = (
 )
 
 
+VALIDATION_FIGURES = (
+    {
+        "file": "R20241012-041002_30m45s.png",
+        "caption": (
+            "R20241012-041002.WAV — 30:45–31:45 (04:40) — picos de vocalização. "
+            "Recorte de escuta já combinado (64 eventos, ~2,93 kHz). "
+            "Círculos verdes = eventos do lote, não uma recontagem."
+        ),
+    },
+    {
+        "file": "R20241012-041002_pico_1854s.png",
+        "caption": (
+            "Zoom ~8 s no pico mais forte deste minuto (~1853,65 s, 2928 Hz). "
+            "Só para conferir a forma do canto; o método de contagem continua a ser "
+            "a matriz numérica da STFT."
+        ),
+    },
+    {
+        "file": "R20241012-091022_densest_60s.png",
+        "caption": (
+            "R20241012-091022.WAV — janela de 60 s mais densa — só depois da madrugada. "
+            "Não começar a validação por este ficheiro."
+        ),
+    },
+)
+
+
 def export_relatorio_provisorio(
     resumo_path: Path,
     out_path: Path,
     resultado_path: Path | None = None,
+    spectrogram_dir: Path | None = None,
 ) -> Path:
     """Write the provisional workbook. ``resultado_path`` is optional."""
     resumo = json.loads(Path(resumo_path).read_text(encoding="utf-8"))
     listen_events = _load_listen_events(resultado_path)
+    spec_dir = Path(spectrogram_dir) if spectrogram_dir is not None else DEFAULT_SPEC_DIR
 
     wb = Workbook()
     ws0 = wb.active
@@ -139,7 +171,8 @@ def export_relatorio_provisorio(
     _sheet_por_hora(wb.create_sheet(SHEET_NAMES[4]), resumo)
     _sheet_por_mes(wb.create_sheet(SHEET_NAMES[5]), resumo)
     _sheet_ouvir(wb.create_sheet(SHEET_NAMES[6]), listen_events)
-    _sheet_parametros(wb.create_sheet(SHEET_NAMES[7]))
+    _sheet_espectrogramas(wb.create_sheet(SHEET_NAMES[7]), spec_dir)
+    _sheet_parametros(wb.create_sheet(SHEET_NAMES[8]))
 
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -276,8 +309,9 @@ def _sheet_leia_primeiro(
             "Estado",
             "Este livro é PROVISÓRIO: serve para a aluna abrir, enviar por e-mail "
             "e usar no rascunho da tese. Não substitui a lista completa de eventos "
-            "(output/resultado.xlsx, ~7 MB, gitignored). Não houve escuta sistemática "
-            "nem PNG por arquivo (lote com --no-spectrogram).",
+            "(output/resultado.xlsx, ~7 MB, gitignored). A aba Espectrogramas traz "
+            "o recorte de escuta da madrugada com os picos marcados (validação "
+            "humana). Não há um PNG por evento do lote (isso seriam ~150 mil imagens).",
         ),
         (
             "O que os números são",
@@ -326,7 +360,8 @@ def _sheet_leia_primeiro(
             "O que a tese pode afirmar: docs/PRECISAO_E_LIMITES.md. "
             "Como ler Excel/JSON completos: docs/COMO_LER_OS_RESULTADOS.md. "
             "Parâmetros: aba Parâmetros e src/bioacoustics/config.py. "
-            "Totais enxutos: reports/campo_resumo.json.",
+            "Totais enxutos: reports/campo_resumo.json. "
+            "PNG de validação: aba Espectrogramas e reports/espectrogramas/.",
         ),
         (
             "Como regenerar",
@@ -638,7 +673,8 @@ def _sheet_ouvir(ws: Worksheet, listen_events: list[dict[str, Any]] | None) -> N
         (
             "Como ouvir",
             "Abrir o WAV no VLC/Audacity, ir a 30:45, ouvir um minuto com fones. "
-            "A pergunta é: soa como o anúncio do CEAES 2, ou é outro som na banda?",
+            "A pergunta é: soa como o anúncio do CEAES 2, ou é outro som na banda? "
+            "O espectrograma deste minuto (picos marcados) está na aba Espectrogramas.",
         ),
     ]
     titles = [
@@ -658,7 +694,7 @@ def _sheet_ouvir(ws: Worksheet, listen_events: list[dict[str, Any]] | None) -> N
         n_cols,
         "Recorte de validação humana (já escolhido). PROVISÓRIO: a escuta ainda "
         "não foi feita neste lote. Confirmar espécie no ouvido antes de discutir "
-        "a manhã densa.",
+        "a manhã densa. Espectrograma deste minuto: aba Espectrogramas.",
     )
     for i, (label, value) in enumerate(info):
         row = 3 + i
@@ -739,6 +775,81 @@ def _sheet_ouvir(ws: Worksheet, listen_events: list[dict[str, Any]] | None) -> N
     _widths(ws, [28, 16, 14, 16, 14, 12, 12])
 
 
+def _sheet_espectrogramas(ws: Worksheet, spectrogram_dir: Path) -> None:
+    _tab(ws, "833C0C")
+    n_cols = 4
+    _banner(ws, n_cols)
+    _note(
+        ws,
+        2,
+        n_cols,
+        "Validação humana, não o método de contagem. O lote de campo não gerou "
+        "um PNG por evento (seriam 149 962 imagens). Aqui só o recorte de escuta "
+        "da madrugada (30:45) com os picos já encontrados marcados em verde, "
+        "mais um zoom no pico mais forte. Em arquivos longos o PNG do pipeline "
+        "passa a ser a janela de 60 s com mais picos, não os primeiros 60 s. "
+        "Ficheiros: reports/espectrogramas/.",
+    )
+    titles = ["Figura", "Ficheiro", "Estado", "Legenda"]
+    _headers(ws, 3, titles)
+    ws.column_dimensions["A"].width = 18
+    ws.column_dimensions["B"].width = 42
+    ws.column_dimensions["C"].width = 16
+    ws.column_dimensions["D"].width = 88
+
+    img_row = 4 + len(VALIDATION_FIGURES) + 2
+    for i, fig in enumerate(VALIDATION_FIGURES):
+        row = 4 + i
+        png = Path(spectrogram_dir) / str(fig["file"])
+        present = png.is_file()
+        _cell(ws, row, 1, i + 1)
+        _cell(ws, row, 2, f"reports/espectrogramas/{fig['file']}")
+        _cell(ws, row, 3, "embutida" if present else "ausente")
+        _cell(ws, row, 4, fig["caption"])
+        ws.cell(row, 4).alignment = WRAP_TOP
+        ws.row_dimensions[row].height = 36
+        if not present:
+            ws.cell(row, 3).fill = MISSING_FILL
+            continue
+        caption_row = img_row
+        ws.merge_cells(start_row=caption_row, start_column=1, end_row=caption_row, end_column=n_cols)
+        cap = ws.cell(caption_row, 1, fig["caption"])
+        cap.font = LABEL_FONT
+        cap.alignment = WRAP_TOP
+        ws.row_dimensions[caption_row].height = 32
+        image_row = caption_row + 1
+        try:
+            img = XLImage(str(png))
+            orig_w = float(img.width or 1200)
+            orig_h = float(img.height or 650)
+            max_w = 640.0
+            ratio = min(1.0, max_w / orig_w)
+            img.width = int(orig_w * ratio)
+            img.height = int(orig_h * ratio)
+            height_pt = max(200, int(img.height * 0.78))
+            ws.row_dimensions[image_row].height = height_pt
+            ws.add_image(img, f"A{image_row}")
+        except Exception:
+            miss = ws.cell(image_row, 1, f"Falha ao embutir {png.name}")
+            miss.fill = MISSING_FILL
+            miss.font = NOTE_FONT
+        img_row = image_row + 2
+
+    hint_row = 4 + len(VALIDATION_FIGURES)
+    ws.merge_cells(start_row=hint_row, start_column=1, end_row=hint_row, end_column=n_cols)
+    hint = ws.cell(
+        hint_row,
+        1,
+        "Regenerar PNGs (máquina com o WAV de campo e output/resultado.json): "
+        "python3 scripts/export_espectrogramas_validacao.py  "
+        "depois  python3 scripts/export_relatorio_provisorio.py",
+    )
+    hint.font = NOTE_FONT
+    hint.fill = NOTE_FILL
+    hint.alignment = WRAP_TOP
+    ws.row_dimensions[hint_row].height = 36
+
+
 def _sheet_parametros(ws: Worksheet) -> None:
     _tab(ws, "833C0C")
     titles = ["Parâmetro", "Valor padrão", "Nota"]
@@ -785,6 +896,12 @@ def main(argv: list[str] | None = None) -> Path:
         action="store_true",
         help="Não ler output/resultado.json (útil em testes/CI).",
     )
+    parser.add_argument(
+        "--espectrogramas",
+        type=Path,
+        default=DEFAULT_SPEC_DIR,
+        help="Pasta com os PNG de validação a embutir na aba Espectrogramas.",
+    )
     args = parser.parse_args(argv)
 
     resultado: Path | None
@@ -797,7 +914,9 @@ def main(argv: list[str] | None = None) -> Path:
     else:
         resultado = None
 
-    path = export_relatorio_provisorio(args.resumo, args.out, resultado)
+    path = export_relatorio_provisorio(
+        args.resumo, args.out, resultado, spectrogram_dir=args.espectrogramas
+    )
     size_kb = path.stat().st_size / 1024
     extra = "com recorte Ouvir" if resultado else "sem resultado.json"
     print(f"wrote {path} ({size_kb:.1f} KiB, {extra})")

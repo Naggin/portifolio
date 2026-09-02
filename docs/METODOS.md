@@ -150,7 +150,10 @@ Gravações de 1–6 h não são carregadas inteiras.
 - o passo efetivo faz as regiões úteis (sem as margens de 1,5 s) se
   encostarem, evitando duplicar eventos nas juntas;
 - tempos dos eventos são deslocados para o relógio do arquivo;
-- o PNG, se pedido, mostra só a **primeira** janela (`spectrogram_preview_s`).
+- o PNG, se pedido, mostra a **janela de 60 s com mais picos**
+  (`spectrogram_preview_s`), não os primeiros 60 s; ficheiros mais curtos
+  que isso ficam com o PNG do arquivo inteiro. Conferência da tese:
+  aba `Espectrogramas` em `reports/relatorio_provisorio.xlsx`.
 
 O lote de campo desta análise usou `--no-spectrogram`: não há PNG por arquivo.
 
@@ -195,9 +198,11 @@ Lista curta abaixo. Frases prontas para a tese e o que **não** afirmar:
    `output/resultado.json` são gravados quando o lote **termina**. Totais
    oficiais deste lote: 75 arquivos, 149 962 eventos, 104,7 h. Cópia enxuta no
    Git: `reports/campo_resumo.json`.
-6. **PNG ausente neste lote.** Conferência visual arquivo a arquivo exige
-   rerodar sem `--no-spectrogram` (e, em arquivos de horas, só o preview de
-   60 s).
+6. **PNG de validação, não um por evento.** O lote de campo usou
+   `--no-spectrogram`. Conferência visual do recorte de escuta (30:45,
+   picos marcados) está na aba `Espectrogramas` do Excel provisório.
+   Em arquivos longos, um PNG novo seria a janela com mais picos, não
+   t=0. Não se geram 149 962 imagens.
 
 ## 14. Relatórios gerados
 

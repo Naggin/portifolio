@@ -28,7 +28,7 @@ A aluna **não escolhe** entre planilha e gráfico. Cada lote grava os dois:
 | **Excel provisório** | [`reports/relatorio_provisorio.xlsx`](reports/relatorio_provisorio.xlsx) | Planilha **partilhável** (e-mail, rascunho da tese): resumo, campanhas, gráficos e recorte para ouvir. Marcada **PROVISÓRIO**. Sem as 149 962 linhas. |
 | **Excel completo** | `output/resultado.xlsx` | Lista local de todos os eventos (~7 MB, gitignored). Abas `Events`, `Files`, `By hour`, `By month`. |
 | **Painel** | `web/` + `output/resultado.json` | Cartões, gráficos por hora/mês e tabelas no navegador. |
-| **PNG** | `output/<arquivo>_spectrogram.png` | Conferência humana. **Este lote de campo usou `--no-spectrogram`** — não há PNG. |
+| **PNG** | `output/<arquivo>_spectrogram.png` | Conferência humana. Arquivo longo: janela com picos (não t=0). Tese: aba `Espectrogramas`. |
 
 O CLI só escreve o `.xlsx` e o `.json` **quando termina todos os arquivos**.
 Este lote de campo **terminou**: 75 arquivos, 104,7 h, 149 962 eventos
@@ -127,7 +127,7 @@ src/
   detect.py           # CLI entrypoint
 docs/                 # instalação Mac, métodos, como ler resultados, reprodutibilidade (PT)
 scripts/              # download Drive, resumo do lote, Excel provisório
-reports/              # campo_resumo.json + relatorio_provisorio.xlsx (sem WAV)
+reports/              # campo_resumo.json, relatorio_provisorio.xlsx, espectrogramas/
 tests/                # pipeline sanity tests
 web/                  # React + Vite dashboard
 data/audios/          # put real recordings here (git-ignored)

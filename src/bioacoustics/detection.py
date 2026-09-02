@@ -46,7 +46,8 @@ class DetectionResult:
     band_energy: np.ndarray
     threshold: float
     # When chunking long files, ``times``/``band_energy`` span the whole
-    # recording while the PNG spectrogram is only the first window.
+    # recording. ``spectrogram_db`` / ``preview_times`` stay the first chunk
+    # (legacy). Validation PNGs reload the densest peak window instead.
     preview_times: np.ndarray | None = None
 
     @property

@@ -20,7 +20,9 @@ RESUMO = ROOT / "reports" / "campo_resumo.json"
 
 def test_export_relatorio_provisorio_sem_resultado_json(tmp_path: Path) -> None:
     out = tmp_path / "relatorio_provisorio.xlsx"
-    path = export_relatorio_provisorio(RESUMO, out, resultado_path=None)
+    path = export_relatorio_provisorio(
+        RESUMO, out, resultado_path=None, spectrogram_dir=tmp_path
+    )
 
     assert path.is_file()
     assert path.stat().st_size > 0
@@ -44,3 +46,35 @@ def test_export_relatorio_provisorio_sem_resultado_json(tmp_path: Path) -> None:
     )
     assert "R20241012-041002.WAV" in ouvir
     assert "30:45" in ouvir
+
+    spec = " ".join(
+        str(value)
+        for row in wb["Espectrogramas"].iter_rows(max_col=4, values_only=True)
+        for value in row
+        if value
+    )
+    assert "reports/espectrogramas/" in spec
+    assert "ausente" in spec
+
+
+def test_export_relatorio_embute_png(tmp_path: Path) -> None:
+    from PIL import Image
+
+    png = tmp_path / "R20241012-041002_30m45s.png"
+    Image.new("RGB", (80, 40), color=(20, 20, 20)).save(png)
+
+    out = tmp_path / "relatorio.xlsx"
+    path = export_relatorio_provisorio(
+        RESUMO, out, resultado_path=None, spectrogram_dir=tmp_path
+    )
+    wb = load_workbook(path)
+    ws = wb["Espectrogramas"]
+    assert ws._images
+    table = " ".join(
+        str(value)
+        for row in ws.iter_rows(min_row=4, max_row=6, max_col=3, values_only=True)
+        for value in row
+        if value
+    )
+    assert "embutida" in table
+

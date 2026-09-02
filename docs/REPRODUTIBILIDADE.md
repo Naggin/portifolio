@@ -105,7 +105,7 @@ Fonte: `src/bioacoustics/config.py`. Calibração: `CEAES 2.m4a` (Fase 2).
 | `edge_guard_s` | 1.5 | margem morta nas pontas da janela |
 | `chunk_duration_s` | 60 | arquivos longos |
 | `chunk_overlap_s` | 3 | 2 × `edge_guard_s` |
-| `spectrogram_preview_s` | 60 | PNG só da primeira janela |
+| `spectrogram_preview_s` | 60 | PNG = janela com mais picos, não t=0 |
 
 ## O que não entra no Git
 

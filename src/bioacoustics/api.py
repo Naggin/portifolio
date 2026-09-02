@@ -21,7 +21,7 @@ from urllib.parse import unquote, urlparse
 from .config import AUDIO_EXTENSIONS, DetectionConfig
 from .pipeline import process_file
 from .report import write_json_report, write_report
-from .visualization import save_spectrogram
+from .visualization import save_file_spectrograms
 
 DEFAULT_OUTPUT = Path("output")
 DEFAULT_UPLOAD_DIR = Path("data/uploads")
@@ -342,12 +342,13 @@ def run_pipeline_on_uploads(uploads: list[SavedUpload], output_dir: Path) -> dic
     results = []
     for upload in uploads:
         result = process_file(upload.path, cfg)
-        png = output_dir / f"{Path(result.filename).stem}_spectrogram.png"
-        save_spectrogram(
-            result.detection,
+        save_file_spectrograms(
+            upload.path,
+            result.detection.events,
+            result.detection.duration_s,
             cfg,
-            png,
-            title=f"{result.filename} — detected calls",
+            output_dir,
+            result=result.detection,
         )
         results.append(result)
     json_path = write_json_report(results, output_dir / JSON_NAME, cfg)

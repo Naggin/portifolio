@@ -143,6 +143,8 @@ espécie no campo, não só energia na banda.
 
 1. Amostra de conferência humana (escuta ou PNG) em trechos de madrugada
    **e** de manhã, vários arquivos, com taxa de verdadeiro/falso positivo.
+   O recorte 30:45 já tem espectrograma com picos marcados na aba
+   `Espectrogramas` (validação, não o método de contagem; não cobre o lote).
 2. Recalibrar o limiar num trecho ruidoso do açude, não só no CEAES 2.
 3. Relógio por evento (`recorded_at` + `peak_time_s`) nos gráficos
    hora/mês, e data para os 7 MP3s sem padrão `R…`.
@@ -160,6 +162,6 @@ confundir precisão do detector com prova de identidade de cada evento**.
 | Eventos, limiar, picos | `src/bioacoustics/detection.py` |
 | Janelas de 60 s | `src/bioacoustics/pipeline.py` |
 | Totais do lote | `reports/campo_resumo.json` |
-| Excel provisório (e-mail / tese) | `reports/relatorio_provisorio.xlsx` |
+| Excel provisório (e-mail / tese) | `reports/relatorio_provisorio.xlsx` (aba `Espectrogramas`) |
 | Como repetir o comando | `docs/REPRODUTIBILIDADE.md` |
 | Testes (vento, dueto, chunking, tempos) | `tests/test_detection.py` (`pytest`) |
