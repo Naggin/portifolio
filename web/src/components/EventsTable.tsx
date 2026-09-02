@@ -4,6 +4,28 @@ import { AUDIO_MISSING_MESSAGE, fetchEventSpectrogram } from '@/lib/eventSpectro
 import { formatClock, formatHz, formatInteger, formatSeconds } from '@/lib/format'
 import type { DetectionReport, ReportEvent } from '@/lib/types'
 
+const COLUMNS = [
+  { key: 'file', label: 'Arquivo', title: 'Nome da gravação' },
+  { key: 'recorded_at', label: 'Gravado em', title: 'Data/hora do início do arquivo (nome RYYYYMMDD-HHMMSS)' },
+  { key: 'event', label: 'Nº', title: 'Ordem do evento dentro deste arquivo' },
+  { key: 'start_s', label: 'Início', title: 'Segundo em que o evento começa no arquivo' },
+  { key: 'end_s', label: 'Fim', title: 'Segundo em que o evento termina no arquivo' },
+  { key: 'peak_time_s', label: 'Pico', title: 'Instante do pico de energia dentro do evento' },
+  { key: 'peak_freq_hz', label: 'Freq.', title: 'Frequência do pico (Hz) na banda calibrada' },
+  { key: 'energy', label: 'Energia', title: 'Energia relativa no pico' },
+  {
+    key: 'n_callers',
+    label: 'Indiv.',
+    title: 'Picos simultâneos estimados — não é ID de animal (máx. ~2 por limite da banda)',
+  },
+  { key: 'duration_s', label: 'Duração', title: 'Duração do evento em segundos' },
+  {
+    key: 'spectrogram',
+    label: 'Espectrograma',
+    title: 'Gera PNG sob pedido via API (não são 149 962 imagens no Git)',
+  },
+] as const
+
 function eventRowKey(event: ReportEvent, index: number): string {
   return `${event.file}-${event.event}-${index}`
 }
@@ -37,6 +59,7 @@ export function EventsTable({ report }: { report: DetectionReport }) {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            placeholder="nome do WAV…"
             className="ml-2 rounded border border-line bg-surface px-2 py-1 text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
           />
         </label>
@@ -59,60 +82,65 @@ export function EventsTable({ report }: { report: DetectionReport }) {
         </a>{' '}
         (recorte 30:45), não como imagem de cada linha.
       </p>
-      <div className="max-h-[28rem] overflow-auto rounded-lg border border-line bg-surface">
-        <table className="min-w-full text-left text-sm tabular-nums">
-          <thead className="sticky top-0 border-b border-line bg-paper text-muted">
-            <tr>
-              <th className="px-3 py-2 font-medium">Arquivo</th>
-              <th className="px-3 py-2 font-medium">Data</th>
-              <th className="px-3 py-2 font-medium">Nº</th>
-              <th className="px-3 py-2 font-medium">Início</th>
-              <th className="px-3 py-2 font-medium">Fim</th>
-              <th className="px-3 py-2 font-medium">Pico</th>
-              <th className="px-3 py-2 font-medium">Freq.</th>
-              <th className="px-3 py-2 font-medium">Energia</th>
-              <th className="px-3 py-2 font-medium">Indiv.</th>
-              <th className="px-3 py-2 font-medium">Duração</th>
-              <th className="px-3 py-2 font-medium">Espectrograma</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((event, index) => {
-              const rowKey = eventRowKey(event, index)
-              const expanded = openKey === rowKey
-              return (
-                <tr
-                  key={rowKey}
-                  className={`border-b border-line last:border-0 ${expanded ? 'bg-accent-soft' : ''}`}
-                >
-                  <td className="px-3 py-2 text-ink">{event.file}</td>
-                  <td className="px-3 py-2 text-muted">{formatClock(event.recorded_at)}</td>
-                  <td className="px-3 py-2">{event.event}</td>
-                  <td className="px-3 py-2">{formatSeconds(event.start_s)}</td>
-                  <td className="px-3 py-2">{formatSeconds(event.end_s)}</td>
-                  <td className="px-3 py-2">{formatSeconds(event.peak_time_s)}</td>
-                  <td className="px-3 py-2">{formatHz(event.peak_freq_hz)}</td>
-                  <td className="px-3 py-2">{event.energy.toFixed(3)}</td>
-                  <td className="px-3 py-2">{event.n_callers}</td>
-                  <td className="px-3 py-2">{formatSeconds(event.duration_s)}</td>
-                  <td className="px-3 py-2">
-                    <button
-                      type="button"
-                      className="text-accent underline-offset-2 hover:underline"
-                      aria-expanded={expanded}
-                      aria-controls="event-spectrogram-panel"
-                      aria-label={`Ver espectrograma do evento ${event.event} de ${event.file}`}
-                      onClick={() => setOpenKey(expanded ? null : rowKey)}
-                    >
-                      {expanded ? 'Ocultar' : 'Ver espectrograma'}
-                    </button>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+      {filtered.length === 0 ? (
+        <p className="rounded-lg border border-line bg-surface px-4 py-6 text-center text-sm text-muted">
+          Nenhum evento corresponde ao filtro. Limpe a busca ou carregue outro relatório.
+        </p>
+      ) : (
+        <div className="max-h-[28rem] overflow-auto rounded-lg border border-line bg-surface">
+          <table className="min-w-full text-left text-sm tabular-nums">
+            <thead className="sticky top-0 border-b border-line bg-paper text-muted">
+              <tr>
+                {COLUMNS.map((column) => (
+                  <th
+                    key={column.key}
+                    className="px-3 py-2 font-medium"
+                    title={column.title}
+                    scope="col"
+                  >
+                    {column.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((event, index) => {
+                const rowKey = eventRowKey(event, index)
+                const expanded = openKey === rowKey
+                return (
+                  <tr
+                    key={rowKey}
+                    className={`border-b border-line last:border-0 ${expanded ? 'bg-accent-soft' : ''}`}
+                  >
+                    <td className="px-3 py-2 text-ink">{event.file}</td>
+                    <td className="px-3 py-2 text-muted">{formatClock(event.recorded_at)}</td>
+                    <td className="px-3 py-2">{event.event}</td>
+                    <td className="px-3 py-2">{formatSeconds(event.start_s)}</td>
+                    <td className="px-3 py-2">{formatSeconds(event.end_s)}</td>
+                    <td className="px-3 py-2">{formatSeconds(event.peak_time_s)}</td>
+                    <td className="px-3 py-2">{formatHz(event.peak_freq_hz)}</td>
+                    <td className="px-3 py-2">{event.energy.toFixed(3)}</td>
+                    <td className="px-3 py-2">{event.n_callers}</td>
+                    <td className="px-3 py-2">{formatSeconds(event.duration_s)}</td>
+                    <td className="px-3 py-2">
+                      <button
+                        type="button"
+                        className="text-accent underline-offset-2 hover:underline"
+                        aria-expanded={expanded}
+                        aria-controls="event-spectrogram-panel"
+                        aria-label={`Ver espectrograma do evento ${event.event} de ${event.file}`}
+                        onClick={() => setOpenKey(expanded ? null : rowKey)}
+                      >
+                        {expanded ? 'Ocultar' : 'Ver espectrograma'}
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
       {openEvent ? (
         <div id="event-spectrogram-panel" className="mt-3 rounded-lg border border-line bg-surface px-3 py-3">
           <EventSpectrogramPanel event={openEvent} />

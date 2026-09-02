@@ -180,7 +180,10 @@ export default function App() {
             <ReportView loaded={loaded} />
           </section>
         ) : !loadError ? (
-          <p className="text-sm text-muted">Carregando o relatório de campo…</p>
+          <p className="inline-flex items-center gap-2 text-sm text-muted" role="status">
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            Carregando o relatório de campo…
+          </p>
         ) : null}
       </main>
     </div>
