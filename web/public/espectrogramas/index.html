@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Espectrogramas de validação — perereca-de-banhado</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #f4f1ea;
+        --surface: #ffffff;
+        --ink: #1f1c18;
+        --muted: #5c574f;
+        --line: #d8d2c6;
+        --accent: #2f5d50;
+        --warn: #8a5a12;
+        --warn-soft: #f4ead3;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--muted);
+        font: 15px/1.45 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+      }
+      header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--line);
+        padding: 1.25rem 1.5rem;
+      }
+      header p.kicker {
+        margin: 0;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      h1 {
+        margin: 0.35rem 0 0.4rem;
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: var(--ink);
+      }
+      header p.lead { margin: 0; max-width: 46rem; }
+      main {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        max-width: 72rem;
+      }
+      figure {
+        margin: 0;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: #111;
+      }
+      figcaption {
+        padding: 0.9rem 1rem 1.05rem;
+      }
+      figcaption strong {
+        display: block;
+        color: var(--ink);
+        font-weight: 550;
+        margin-bottom: 0.25rem;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--warn);
+        background: var(--warn-soft);
+        border-radius: 999px;
+        padding: 0.15rem 0.55rem;
+        margin-bottom: 0.45rem;
+      }
+      footer {
+        padding: 0 1.5rem 2rem;
+        max-width: 72rem;
+        font-size: 0.9rem;
+      }
+      a { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <p class="kicker">Validação visual · PR #9</p>
+      <h1>Espectrogramas de validação</h1>
+      <p class="lead">
+        Conferência humana dos picos já contados no lote — não é o método de
+        contagem. Círculos verdes = eventos de <code>output/resultado.json</code>.
+        Comece pela madrugada (30:45), não pelo ficheiro da manhã.
+      </p>
+    </header>
+    <main>
+      <figure>
+        <img
+          src="./R20241012-041002_30m45s.png"
+          alt="Espectrograma do recorte 30:45–31:45 de R20241012-041002.WAV, com 64 picos marcados em verde na banda 2,6–3,2 kHz."
+          width="1309"
+          height="703"
+        />
+        <figcaption>
+          <span class="badge">1 · madrugada</span>
+          <strong>R20241012-041002.WAV — 30:45–31:45 (04:40) — 64 picos</strong>
+          Recorte de escuta já combinado (~2,93 kHz). Círculos verdes = eventos do lote, não uma recontagem.
+        </figcaption>
+      </figure>
+      <figure>
+        <img
+          src="./R20241012-041002_pico_1854s.png"
+          alt="Zoom de 8 segundos no pico mais forte (~1854 s, 2,93 kHz) do recorte da madrugada."
+          width="1309"
+          height="703"
+        />
+        <figcaption>
+          <span class="badge">2 · zoom 8 s</span>
+          <strong>Zoom no pico mais forte (~1854 s, 2928 Hz)</strong>
+          Só para conferir a forma do canto. A contagem continua a ser a matriz numérica da STFT.
+        </figcaption>
+      </figure>
+      <figure>
+        <img
+          src="./R20241012-091022_densest_60s.png"
+          alt="Janela de 60 segundos mais densa de R20241012-091022.WAV, ficheiro da manhã, só depois da madrugada."
+          width="1309"
+          height="702"
+        />
+        <figcaption>
+          <span class="badge">3 · manhã (secundário)</span>
+          <strong>R20241012-091022.WAV — janela de 60 s mais densa</strong>
+          Só depois da madrugada. Não comece a validação por este ficheiro.
+        </figcaption>
+      </figure>
+    </main>
+    <footer>
+      Cópia local de <code>reports/espectrogramas/</code>.
+      Backup: Excel provisório, aba <strong>Espectrogramas</strong>
+      (<code>reports/relatorio_provisorio.xlsx</code>).
+      Painel: <a href="/">/</a>
+    </footer>
+  </body>
+</html>
