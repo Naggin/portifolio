@@ -325,3 +325,112 @@ def test_event_spectrogram_png_for_known_peak(api_http):
     )
     assert status2 == 200
     assert raw2 == raw
+
+
+def test_file_spectrogram_on_demand_when_png_missing(api_http):
+    """GET /api/spectrograms/{stem}_spectrogram.png generates and caches when audio + JSON exist."""
+    from io import BytesIO
+
+    from PIL import Image
+
+    output_dir: Path = api_http["output_dir"]
+    field_dir: Path = api_http["field_dir"]
+    campaign = field_dir / "10_10_25 açude 1"
+    campaign.mkdir()
+    wav_name = "R20241011-180923.WAV"
+    wav_path = campaign / wav_name
+    sr = 22_050
+    duration_s = 8.0
+    n = int(sr * duration_s)
+    t = np.arange(n) / sr
+    audio = (0.01 * np.random.default_rng(7).standard_normal(n)).astype(np.float32)
+    tone = (t >= 5.0) & (t < 5.4)
+    audio[tone] += (0.45 * np.sin(2 * np.pi * 2713.0 * t[tone])).astype(np.float32)
+    sf.write(str(wav_path), audio, sr, subtype="PCM_16")
+
+    report = {
+        "generated_at": "2026-01-01T00:00:00+00:00",
+        "species": "Sphaenorhynchus caramaschii",
+        "common_name": "perereca-de-banhado",
+        "config": {"sample_rate": sr, "lowcut_hz": 2600.0, "highcut_hz": 3200.0, "threshold_k": 6.0},
+        "summary": {"n_files": 1, "n_events": 1, "max_simultaneous": 1, "total_duration_s": duration_s},
+        "files": [
+            {
+                "file": wav_name,
+                "recorded_at": "2024-10-11T18:09:23",
+                "duration_s": duration_s,
+                "n_events": 1,
+                "max_simultaneous": 1,
+                "threshold": 20.0,
+                "spectrogram": "",
+            }
+        ],
+        "events": [
+            {
+                "file": wav_name,
+                "recorded_at": "2024-10-11T18:09:23",
+                "event": 1,
+                "start_s": 5.05,
+                "end_s": 5.35,
+                "peak_time_s": 5.2,
+                "peak_freq_hz": 2713.0,
+                "energy": 1.0,
+                "n_callers": 1,
+                "duration_s": 0.3,
+            }
+        ],
+        "by_hour": [{"hour": h, "n_events": 0} for h in range(24)],
+        "by_month": [{"month": m, "n_events": 0} for m in range(1, 13)],
+    }
+    (output_dir / "resultado.json").write_text(json.dumps(report), encoding="utf-8")
+    png_name = "R20241011-180923_spectrogram.png"
+    cache_path = output_dir / png_name
+    assert not cache_path.exists()
+
+    port = api_http["port"]
+    status, raw, headers = _request(
+        port, "GET", f"/api/spectrograms/{png_name}", timeout=60.0
+    )
+    assert status == 200, raw[:500]
+    assert headers["content-type"] == "image/png"
+    assert len(raw) > 2000
+    image = Image.open(BytesIO(raw))
+    assert image.format == "PNG"
+    assert cache_path.is_file() and cache_path.stat().st_size > 2000
+
+    status2, raw2, _ = _request(port, "GET", f"/api/spectrograms/{png_name}", timeout=30.0)
+    assert status2 == 200
+    assert raw2 == raw
+
+
+def test_file_spectrogram_missing_audio(api_http):
+    output_dir: Path = api_http["output_dir"]
+    wav_name = "R20241011-180923.WAV"
+    report = {
+        "generated_at": "2026-01-01T00:00:00+00:00",
+        "species": "Sphaenorhynchus caramaschii",
+        "common_name": "perereca-de-banhado",
+        "config": {"sample_rate": 22050, "lowcut_hz": 2600.0, "highcut_hz": 3200.0, "threshold_k": 6.0},
+        "summary": {"n_files": 1, "n_events": 0, "max_simultaneous": 0, "total_duration_s": 60.0},
+        "files": [
+            {
+                "file": wav_name,
+                "recorded_at": "2024-10-11T18:09:23",
+                "duration_s": 60.0,
+                "n_events": 0,
+                "max_simultaneous": 0,
+                "threshold": 20.0,
+                "spectrogram": "",
+            }
+        ],
+        "events": [],
+        "by_hour": [{"hour": h, "n_events": 0} for h in range(24)],
+        "by_month": [{"month": m, "n_events": 0} for m in range(1, 13)],
+    }
+    (output_dir / "resultado.json").write_text(json.dumps(report), encoding="utf-8")
+    png_name = "R20241011-180923_spectrogram.png"
+    status, raw, _ = _request(api_http["port"], "GET", f"/api/spectrograms/{png_name}")
+    assert status == 404
+    payload = json.loads(raw)
+    assert payload["code"] == "audio_not_found"
+    assert "não está nesta máquina" in payload["error"]

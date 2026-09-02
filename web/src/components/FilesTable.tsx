@@ -1,27 +1,39 @@
 import { useState } from 'react'
 import { formatClock, formatDuration, formatInteger } from '@/lib/format'
-import { reportHasSpectrograms, type LoadedReport } from '@/lib/report'
+import { fileSpectrogramName, reportHasSpectrograms, type LoadedReport } from '@/lib/report'
 
 export function FilesTable({ loaded }: { loaded: LoadedReport }) {
   const [open, setOpen] = useState<string | null>(null)
   const showSpectrograms = reportHasSpectrograms(loaded.report, loaded.source)
   const isCampoBatch = loaded.source === 'campo' || loaded.report.has_spectrograms === false
+  const onDemandSpectrograms = loaded.source === 'live' && isCampoBatch
 
   return (
     <section aria-labelledby="files-heading">
       <h2 id="files-heading" className="mb-3 text-base font-medium text-ink">
         Arquivos
       </h2>
-      {isCampoBatch ? (
+      {onDemandSpectrograms ? (
         <p className="mb-3 rounded border border-line bg-surface px-3 py-2 text-sm text-muted">
-          <strong className="font-medium text-ink">Espectrograma indisponível</strong> neste lote: o
-          processamento de campo usou <code className="text-xs">--no-spectrogram</code> (149 962 PNG
-          seriam inviáveis). Para conferência visual, use a{' '}
+          Este lote de campo rodou com <code className="text-xs">--no-spectrogram</code>.{' '}
+          <strong className="font-medium text-ink">Ver PNG</strong> gera a janela de 60 s mais densa
+          sob pedido (requer o WAV em <code className="text-xs">data/field/</code>). Para validação
+          fixa, use a{' '}
           <a href="/espectrogramas/" className="text-accent hover:underline">
             galeria de validação (madrugada 30:45)
           </a>{' '}
-          ou clique <strong className="font-medium text-ink">Ver espectrograma</strong> na tabela
-          Eventos (gera PNG sob pedido quando a API está no ar).
+          ou <strong className="font-medium text-ink">Ver espectrograma</strong> na tabela Eventos.
+        </p>
+      ) : isCampoBatch ? (
+        <p className="mb-3 rounded border border-line bg-surface px-3 py-2 text-sm text-muted">
+          <strong className="font-medium text-ink">Espectrograma indisponível</strong> neste lote: o
+          processamento de campo usou <code className="text-xs">--no-spectrogram</code>. Para
+          conferência visual, use a{' '}
+          <a href="/espectrogramas/" className="text-accent hover:underline">
+            galeria de validação (madrugada 30:45)
+          </a>{' '}
+          ou carregue o relatório com a API local e o áudio em{' '}
+          <code className="text-xs">data/field/</code>.
         </p>
       ) : !showSpectrograms ? (
         <p className="mb-3 text-sm text-muted">
@@ -65,7 +77,11 @@ export function FilesTable({ loaded }: { loaded: LoadedReport }) {
                 {showSpectrograms ? (
                   <th
                     className="px-3 py-2 font-medium"
-                    title="PNG gerado no processamento (janela de 60 s mais densa em arquivos longos)"
+                    title={
+                      onDemandSpectrograms
+                        ? 'PNG gerado sob pedido (janela de 60 s mais densa em arquivos longos)'
+                        : 'PNG gerado no processamento (janela de 60 s mais densa em arquivos longos)'
+                    }
                   >
                     Espectrograma
                   </th>
@@ -75,6 +91,7 @@ export function FilesTable({ loaded }: { loaded: LoadedReport }) {
             <tbody>
               {loaded.report.files.map((file) => {
                 const expanded = open === file.file
+                const spectrogram = fileSpectrogramName(file)
                 return (
                   <tr key={file.file} className="border-b border-line last:border-0 align-top">
                     <td className="px-3 py-2 font-medium text-ink">{file.file}</td>
@@ -84,7 +101,7 @@ export function FilesTable({ loaded }: { loaded: LoadedReport }) {
                     <td className="px-3 py-2">{formatInteger(file.max_simultaneous)}</td>
                     {showSpectrograms ? (
                       <td className="px-3 py-2">
-                        {file.spectrogram ? (
+                        {spectrogram ? (
                           <>
                             <button
                               type="button"
@@ -96,8 +113,9 @@ export function FilesTable({ loaded }: { loaded: LoadedReport }) {
                             </button>
                             {expanded ? (
                               <SpectrogramImage
-                                src={loaded.spectrogramUrl(file.spectrogram)}
+                                src={loaded.spectrogramUrl(spectrogram)}
                                 alt={`Espectrograma de ${file.file}`}
+                                onDemand={onDemandSpectrograms}
                               />
                             ) : null}
                           </>
@@ -117,21 +135,42 @@ export function FilesTable({ loaded }: { loaded: LoadedReport }) {
   )
 }
 
-function SpectrogramImage({ src, alt }: { src: string; alt: string }) {
+function SpectrogramImage({
+  src,
+  alt,
+  onDemand = false,
+}: {
+  src: string
+  alt: string
+  onDemand?: boolean
+}) {
   const [failed, setFailed] = useState(false)
+  const [loading, setLoading] = useState(onDemand)
   if (failed) {
     return (
       <p className="mt-2 max-w-md text-sm text-muted">
-        Espectrograma indisponível (PNG ausente no servidor).
+        Espectrograma indisponível — confirme que o áudio está em{' '}
+        <code className="text-xs">data/field/</code> e que a API está no ar.
       </p>
     )
   }
   return (
-    <img
-      src={src}
-      alt={alt}
-      className="mt-2 max-h-80 w-full max-w-xl rounded border border-line bg-paper object-contain"
-      onError={() => setFailed(true)}
-    />
+    <>
+      {loading ? (
+        <p className="mt-2 text-sm text-muted" aria-live="polite">
+          A gerar o espectrograma (pode demorar em gravações longas)…
+        </p>
+      ) : null}
+      <img
+        src={src}
+        alt={alt}
+        className="mt-2 max-h-80 w-full max-w-xl rounded border border-line bg-paper object-contain"
+        onLoad={() => setLoading(false)}
+        onError={() => {
+          setLoading(false)
+          setFailed(true)
+        }}
+      />
+    </>
   )
 }

@@ -58,9 +58,19 @@ export function liveSpectrogramUrl(filename: string): string {
   return `/api/spectrograms/${encodeURIComponent(filename)}`
 }
 
+export function fileSpectrogramName(file: { file: string; spectrogram?: string | null }): string | null {
+  const named = file.spectrogram?.trim()
+  if (named) return named
+  const stem = file.file.replace(/\.[^.]+$/, '')
+  return stem ? `${stem}_spectrogram.png` : null
+}
+
 export function reportHasSpectrograms(report: DetectionReport, source: ReportSource): boolean {
+  if (source === 'live') {
+    return report.files.length > 0
+  }
   if (source === 'campo' || report.has_spectrograms === false) return false
-  return report.files.some((file) => Boolean(file.spectrogram))
+  return report.files.some((file) => Boolean(fileSpectrogramName(file)))
 }
 
 export function inferReportSource(report: DetectionReport, fallback: ReportSource): ReportSource {

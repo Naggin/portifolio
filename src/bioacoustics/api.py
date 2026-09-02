@@ -1,8 +1,8 @@
 """Tiny HTTP API so the React dashboard can read pipeline output and upload audio.
 
-Serves the JSON report and spectrogram PNGs from ``output/``. Per-event
-spectrograms are generated on demand from local field/upload audio
-(``GET /api/event-spectrogram``). Run with:
+Serves the JSON report and spectrogram PNGs from ``output/``. File-level and
+per-event spectrograms are generated on demand from local field/upload audio
+(``GET /api/spectrograms/{name}.png``, ``GET /api/event-spectrogram``). Run with:
 
     PYTHONPATH=src python -m bioacoustics.api
 """
@@ -169,6 +169,110 @@ def find_audio_by_basename(filename: str, roots: Sequence[Path]) -> Path | None:
         except OSError:
             continue
     return None
+
+
+def file_spectrogram_stem(png_name: str) -> str:
+    """``R20241011-180923_spectrogram.png`` → ``R20241011-180923``."""
+    base = Path(png_name).name
+    if base.endswith("_spectrogram.png"):
+        return base[: -len("_spectrogram.png")]
+    return Path(base).stem
+
+
+def find_audio_for_spectrogram_stem(stem: str, roots: Sequence[Path]) -> Path | None:
+    """Resolve field/upload audio from a PNG stem or report basename."""
+    stem = stem.strip()
+    if not stem:
+        return None
+    for ext in ALLOWED_EXTENSIONS:
+        found = find_audio_by_basename(f"{stem}{ext}", roots)
+        if found is not None:
+            return found
+    wanted = stem.lower()
+    for root in roots:
+        root = Path(root)
+        if not root.exists():
+            continue
+        try:
+            for path in root.rglob("*"):
+                if EVENT_SPEC_DIR in path.parts:
+                    continue
+                if path.is_file() and path.stem.lower() == wanted:
+                    return path
+        except OSError:
+            continue
+    return None
+
+
+def load_report_events_for_file(output_dir: Path, audio_filename: str) -> tuple[list[dict], float] | None:
+    """Events and duration for ``audio_filename`` from ``resultado.json``."""
+    report_path = output_dir / JSON_NAME
+    if not report_path.is_file():
+        return None
+    try:
+        payload = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    duration_s: float | None = None
+    for row in payload.get("files") or []:
+        if isinstance(row, dict) and row.get("file") == audio_filename:
+            try:
+                duration_s = float(row.get("duration_s", 0.0))
+            except (TypeError, ValueError):
+                duration_s = 0.0
+            break
+    if duration_s is None:
+        return None
+    events = [
+        ev
+        for ev in payload.get("events") or []
+        if isinstance(ev, dict) and ev.get("file") == audio_filename
+    ]
+    return events, duration_s
+
+
+def render_file_spectrogram(
+    png_name: str,
+    output_dir: Path,
+    audio_roots: Sequence[Path],
+    cfg: DetectionConfig | None = None,
+) -> Path:
+    """Write (or reuse) ``output/{stem}_spectrogram.png`` for the densest peak window."""
+    cache_path = (Path(output_dir) / Path(png_name).name).resolve()
+    output_resolved = Path(output_dir).resolve()
+    if not str(cache_path).startswith(str(output_resolved)):
+        raise AnalyzeError("invalid spectrogram path", 400)
+
+    if cache_path.is_file() and cache_path.stat().st_size > 0:
+        return cache_path
+
+    stem = file_spectrogram_stem(png_name)
+    audio_path = find_audio_for_spectrogram_stem(stem, audio_roots)
+    if audio_path is None:
+        raise AnalyzeError(AUDIO_MISSING_MESSAGE, 404)
+
+    loaded = load_report_events_for_file(output_dir, audio_path.name)
+    if loaded is None:
+        raise AnalyzeError("resultado.json not found or file missing from report", 404)
+    events, duration_s = loaded
+    if duration_s <= 0:
+        duration_s = audio_duration_s(audio_path)
+
+    cfg = cfg or DetectionConfig()
+    with _SPEC_LOCK:
+        if cache_path.is_file() and cache_path.stat().st_size > 0:
+            return cache_path
+        save_file_spectrograms(
+            audio_path,
+            events,
+            duration_s,
+            cfg,
+            output_dir,
+            write_zoom=False,
+        )
+    if not cache_path.is_file() or cache_path.stat().st_size <= 0:
+        raise AnalyzeError("spectrogram generation failed", 500)
+    return cache_path
 
 
 def event_spectrogram_cache_path(output_dir: Path, req: EventSpectrogramRequest) -> Path:
@@ -607,11 +711,7 @@ def make_handler(
                 if not name.endswith(".png"):
                     self._send(*_json_bytes({"error": "spectrogram must be a .png"}, 400))
                     return
-                png = (output_dir / name).resolve()
-                if not str(png).startswith(str(output_dir)) or not png.exists():
-                    self._send(*_json_bytes({"error": "spectrogram not found"}, 404))
-                    return
-                self._send(200, png.read_bytes(), "image/png")
+                self._handle_file_spectrogram(name)
                 return
 
             if path in {"/api/health", "/api/health/"}:
@@ -623,6 +723,30 @@ def make_handler(
                 return
 
             self._send(*_json_bytes({"error": "not found"}, 404))
+
+        def _handle_file_spectrogram(self, name: str) -> None:
+            try:
+                png = render_file_spectrogram(name, output_dir, audio_roots)
+                body = png.read_bytes()
+            except AnalyzeError as exc:
+                payload: dict[str, str] = {"error": str(exc)}
+                if exc.status == 404 and str(exc) == AUDIO_MISSING_MESSAGE:
+                    payload["code"] = "audio_not_found"
+                self._send(*_json_bytes(payload, exc.status))
+                return
+            except ValueError as exc:
+                self._send(*_json_bytes({"error": str(exc)}, 400))
+                return
+            except Exception as exc:
+                traceback.print_exc()
+                self._send(*_json_bytes({"error": f"spectrogram failed: {exc}"}, 500))
+                return
+            self._send(
+                200,
+                body,
+                "image/png",
+                {"Cache-Control": "private, max-age=300", "X-Spectrogram-File": name},
+            )
 
         def _handle_event_spectrogram(self, query: dict[str, list[str]]) -> None:
             try:
