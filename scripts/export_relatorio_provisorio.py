@@ -21,6 +21,7 @@ from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, Reference
+from openpyxl.chart.label import DataLabelList
 from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
@@ -282,7 +283,29 @@ def _bar_chart(
     chart.shape = 4
     chart.width = 18
     chart.height = 10
+    if chart.series:
+        chart.series[0].graphicalProperties.solidFill = "2F5D50"
+        d_lbls = DataLabelList()
+        d_lbls.showVal = True
+        d_lbls.numFmt = "#,##0"
+        chart.series[0].dLbls = d_lbls
     ws.add_chart(chart, anchor)
+    peak_row = header_row + n_rows + 2
+    peak_vals: list[tuple[int, int]] = []
+    for row in range(header_row + 1, header_row + n_rows + 1):
+        val = ws.cell(row, data_col).value
+        if isinstance(val, (int, float)):
+            peak_vals.append((row, int(val)))
+    if peak_vals:
+        best_row, best_val = max(peak_vals, key=lambda item: item[1])
+        hour_label = ws.cell(best_row, cat_col).value
+        formatted = f"{best_val:,}".replace(",", ".")
+        ws.cell(
+            peak_row,
+            1,
+            f"Pico: {hour_label} — {formatted} eventos (início de arquivo neste bloco)",
+        ).font = Font(name="Calibri", bold=True, size=11, color="2F5D50")
+        ws.merge_cells(start_row=peak_row, start_column=1, end_row=peak_row, end_column=6)
 
 
 def _sheet_leia_primeiro(
@@ -305,6 +328,13 @@ def _sheet_leia_primeiro(
     )
     pipeline = resumo.get("pipeline_generated_at") or "lote de campo"
     blocks = [
+        (
+            "Guia das abas",
+            "Leia primeiro (este texto) · Resumo (totais) · Campanhas (por pasta) · "
+            "Arquivos (por gravação) · Por hora / Por mês (início do arquivo) · "
+            "Ouvir (recorte 30:45 para validação) · Espectrogramas (PNG da madrugada) · "
+            "Parâmetros (DetectionConfig, só leitura).",
+        ),
         (
             "Estado",
             "Este livro é PROVISÓRIO: serve para a aluna abrir, enviar por e-mail "
@@ -463,9 +493,9 @@ def _sheet_campanhas(ws: Worksheet, resumo: dict[str, Any]) -> None:
     titles = [
         "Campanha",
         "Arquivos",
-        "Eventos",
+        "Eventos (soma)",
         "Duração (h)",
-        "Eventos/h",
+        "Eventos/h (média)",
         "Máx. simultâneos",
         "Sem data no nome",
     ]
@@ -474,8 +504,9 @@ def _sheet_campanhas(ws: Worksheet, resumo: dict[str, Any]) -> None:
         ws,
         2,
         len(titles),
-        "Pastas de açude 1. «15/08 açude 2 (esse nao precisa)» e «Áudio base» "
-        "não entram. Campanhas só com MP3s não têm recorded_at.",
+        "Pastas de açude 1. «Eventos (soma)» = total de picos na campanha; "
+        "«Eventos/h (média)» = média por arquivo (não é densidade horária do gráfico). "
+        "MP3s sem data no nome ficam destacados.",
     )
     _headers(ws, 3, titles)
     for i, camp in enumerate(resumo.get("campaigns") or []):
@@ -790,16 +821,29 @@ def _sheet_espectrogramas(ws: Worksheet, spectrogram_dir: Path) -> None:
         "passa a ser a janela de 60 s com mais picos, não os primeiros 60 s. "
         "Ficheiros: reports/espectrogramas/.",
     )
+    legend_row = 3
+    ws.merge_cells(start_row=legend_row, start_column=1, end_row=legend_row, end_column=n_cols)
+    legend = ws.cell(
+        legend_row,
+        1,
+        "Como ler: fundo escuro = espectrograma; linha/círculo verde = pico do detector "
+        "naquele instante (não re-detecção visual); eixo horizontal = tempo; vertical = kHz. "
+        "Serve para ouvir+ver se o som parece o anúncio da espécie — não prova ID sozinho.",
+    )
+    legend.font = LABEL_FONT
+    legend.fill = PatternFill("solid", fgColor="E4EEE9")
+    legend.alignment = WRAP_TOP
+    ws.row_dimensions[legend_row].height = 36
     titles = ["Figura", "Ficheiro", "Estado", "Legenda"]
-    _headers(ws, 3, titles)
+    _headers(ws, 4, titles)
     ws.column_dimensions["A"].width = 18
     ws.column_dimensions["B"].width = 42
     ws.column_dimensions["C"].width = 16
     ws.column_dimensions["D"].width = 88
 
-    img_row = 4 + len(VALIDATION_FIGURES) + 2
+    img_row = 5 + len(VALIDATION_FIGURES) + 2
     for i, fig in enumerate(VALIDATION_FIGURES):
-        row = 4 + i
+        row = 5 + i
         png = Path(spectrogram_dir) / str(fig["file"])
         present = png.is_file()
         _cell(ws, row, 1, i + 1)
@@ -835,7 +879,7 @@ def _sheet_espectrogramas(ws: Worksheet, spectrogram_dir: Path) -> None:
             miss.font = NOTE_FONT
         img_row = image_row + 2
 
-    hint_row = 4 + len(VALIDATION_FIGURES)
+    hint_row = 5 + len(VALIDATION_FIGURES)
     ws.merge_cells(start_row=hint_row, start_column=1, end_row=hint_row, end_column=n_cols)
     hint = ws.cell(
         hint_row,

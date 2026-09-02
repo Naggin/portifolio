@@ -2,13 +2,13 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig, type Plugin, type ViteDevServer } from 'vite'
+import { defineConfig, type Connect, type Plugin } from 'vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 /** SPA fallback would otherwise swallow /espectrogramas/ — serve the PNG gallery. */
 function espectrogramasGallery(): Plugin {
-  const rewrite = (req: { url?: string }) => {
+  const rewrite = (req: Connect.IncomingMessage) => {
     const raw = req.url ?? ''
     const pathname = raw.split('?')[0]
     if (pathname === '/espectrogramas' || pathname === '/espectrogramas/') {
@@ -16,7 +16,7 @@ function espectrogramasGallery(): Plugin {
       req.url = `/espectrogramas/index.html${query}`
     }
   }
-  const attach = (server: ViteDevServer) => {
+  const attach = (server: { middlewares: Connect.Server }) => {
     server.middlewares.use((req, _res, next) => {
       rewrite(req)
       next()
