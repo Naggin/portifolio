@@ -13,7 +13,7 @@ matplotlib.use("Agg")  # headless rendering
 import matplotlib.pyplot as plt  # noqa: E402
 import librosa  # noqa: E402
 
-from .audio_io import load_audio_segment  # noqa: E402
+from .audio_io import audio_duration_s, load_audio_segment  # noqa: E402
 from .config import DetectionConfig  # noqa: E402
 from .detection import (  # noqa: E402
     CallEvent,
@@ -24,6 +24,9 @@ from .detection import (  # noqa: E402
 )
 
 ZOOM_WINDOW_S = 8.0
+# Context around one table-row event so the PNG is not a 0.09 s sliver.
+EVENT_CONTEXT_PAD_S = 1.25
+EVENT_MAX_WINDOW_S = 8.0
 
 EventLike = CallEvent | dict[str, Any]
 
@@ -36,7 +39,7 @@ class SpectrogramOutput:
     t0: float
     duration_s: float
     n_marked: int
-    kind: str  # "full" | "window" | "zoom"
+    kind: str  # "full" | "window" | "zoom" | "event"
 
 
 def densest_window_start(
@@ -173,6 +176,101 @@ def save_spectrogram_window(
     )
 
 
+def event_context_window(
+    start_s: float,
+    end_s: float,
+    duration_s: float,
+    *,
+    pad_s: float = EVENT_CONTEXT_PAD_S,
+    max_window_s: float = EVENT_MAX_WINDOW_S,
+    peak_time_s: float | None = None,
+) -> tuple[float, float]:
+    """``(t0, duration)`` with padding around the event, clamped to the file.
+
+    Times are file-absolute. A typical 0.09 s call becomes a few seconds of
+    context; a pathological long span is capped around the peak.
+    """
+    start_s = max(0.0, float(start_s))
+    end_s = max(start_s, float(end_s))
+    duration_s = max(0.0, float(duration_s))
+    pad_s = max(0.0, float(pad_s))
+    t0 = max(0.0, start_s - pad_s)
+    t1 = min(duration_s, end_s + pad_s) if duration_s > 0 else end_s + pad_s
+    if t1 <= t0:
+        t1 = t0 + max(0.05, pad_s * 2.0)
+        if duration_s > 0:
+            t1 = min(duration_s, t1)
+            t0 = max(0.0, min(t0, t1 - 0.05))
+    span = t1 - t0
+    max_window_s = max(0.05, float(max_window_s))
+    if span > max_window_s:
+        center = float(peak_time_s) if peak_time_s is not None else 0.5 * (start_s + end_s)
+        half = max_window_s / 2.0
+        t0 = max(0.0, center - half)
+        t1 = t0 + max_window_s
+        if duration_s > 0 and t1 > duration_s:
+            t1 = duration_s
+            t0 = max(0.0, t1 - max_window_s)
+    return t0, max(0.05, t1 - t0)
+
+
+def event_spectrogram_title(
+    filename: str,
+    event_n: int | None,
+    peak_time_s: float,
+    peak_freq_hz: float,
+    n_callers: int | None,
+) -> str:
+    """Caption for one table row. ``n_callers`` is simultaneous peaks, not an ID."""
+    bits = [filename]
+    if event_n is not None:
+        bits.append(f"evento {int(event_n)}")
+    bits.append(f"pico {float(peak_time_s):.3f} s, {float(peak_freq_hz):.0f} Hz")
+    title = " — ".join(bits)
+    if n_callers is not None:
+        title += f"\ncantores simultâneos estimados: {int(n_callers)}"
+    return title
+
+
+def save_event_spectrogram(
+    path: str | Path,
+    event: EventLike,
+    cfg: DetectionConfig,
+    out_path: str | Path,
+    *,
+    filename: str | None = None,
+    event_n: int | None = None,
+    duration_s: float | None = None,
+    pad_s: float = EVENT_CONTEXT_PAD_S,
+) -> SpectrogramOutput:
+    """Render one already-detected event with context. Does not re-run detection.
+
+    Marks the given ``peak_time_s`` / ``peak_freq_hz`` and the call span; the
+    x-axis stays in file-absolute seconds (same numbers as the Events table).
+    """
+    start_s, end_s = _span(event)
+    peak_t = _peak_time(event)
+    peak_f = _peak_freq(event)
+    if duration_s is None:
+        duration_s = audio_duration_s(path)
+    t0, win = event_context_window(
+        start_s, end_s, float(duration_s), pad_s=pad_s, peak_time_s=peak_t
+    )
+    name = filename or Path(path).name
+    n_callers = _n_callers(event)
+    title = event_spectrogram_title(name, event_n, peak_t, peak_f, n_callers)
+    written = save_spectrogram_window(
+        path, [event], t0, win, cfg, out_path, title
+    )
+    return SpectrogramOutput(
+        path=written.path,
+        t0=written.t0,
+        duration_s=written.duration_s,
+        n_marked=written.n_marked,
+        kind="event",
+    )
+
+
 def save_file_spectrograms(
     path: str | Path,
     events: Sequence[EventLike],
@@ -277,6 +375,17 @@ def _energy(ev: EventLike) -> float:
     return float(ev["energy"] if isinstance(ev, dict) else ev.energy)
 
 
+def _n_callers(ev: EventLike) -> int:
+    if isinstance(ev, dict):
+        raw = ev.get("n_callers", 1)
+    else:
+        raw = getattr(ev, "n_callers", 1)
+    try:
+        return max(1, int(raw))
+    except (TypeError, ValueError):
+        return 1
+
+
 def _span(ev: EventLike) -> tuple[float, float]:
     if isinstance(ev, dict):
         return float(ev["start_s"]), float(ev["end_s"])
@@ -334,8 +443,10 @@ def _draw_spectrogram(
 
     visible = [ev for ev in events if t0 <= _peak_time(ev) <= t1]
     for ev in visible:
+        peak_t = _peak_time(ev)
+        ax_spec.axvline(peak_t, color="lime", lw=0.8, alpha=0.75)
         ax_spec.plot(
-            _peak_time(ev),
+            peak_t,
             _peak_freq(ev),
             "o",
             color="lime",

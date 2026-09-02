@@ -16,8 +16,12 @@ from bioacoustics.config import DetectionConfig  # noqa: E402
 from bioacoustics.detection import CallEvent  # noqa: E402
 from bioacoustics.pipeline import process_file  # noqa: E402
 from bioacoustics.visualization import (  # noqa: E402
+    EVENT_CONTEXT_PAD_S,
     densest_window_start,
+    event_context_window,
+    event_spectrogram_title,
     loudest_event_in_window,
+    save_event_spectrogram,
     save_file_spectrograms,
     save_spectrogram_window,
 )
@@ -142,3 +146,58 @@ def test_save_spectrogram_window_marks_given_events_not_recount(tmp_path: Path):
     assert written.path.is_file()
     assert written.t0 == pytest.approx(4.0)
     assert written.n_marked == 1
+
+
+def test_event_context_window_pads_and_clamps():
+    t0, dur = event_context_window(2.276, 2.368, 3600.0)
+    assert t0 == pytest.approx(2.276 - EVENT_CONTEXT_PAD_S)
+    assert (t0 + dur) == pytest.approx(2.368 + EVENT_CONTEXT_PAD_S)
+    t0, dur = event_context_window(0.10, 0.20, 10.0)
+    assert t0 == pytest.approx(0.0)
+    assert dur == pytest.approx(0.20 + EVENT_CONTEXT_PAD_S)
+    t0, dur = event_context_window(9.80, 9.90, 10.0)
+    assert t0 + dur == pytest.approx(10.0)
+    t0, dur = event_context_window(0.0, 60.0, 120.0, peak_time_s=10.0, max_window_s=8.0)
+    assert dur == pytest.approx(8.0)
+    assert t0 == pytest.approx(6.0)
+
+
+def test_event_spectrogram_title_is_not_individuo():
+    title = event_spectrogram_title("R20241011-180923.WAV", 1, 2.299, 2713.2, 1)
+    assert "indivíduo" not in title.lower()
+    assert "individuo" not in title.lower()
+    assert "cantores simultâneos estimados: 1" in title
+    assert "evento 1" in title
+    assert "2713" in title
+
+
+def test_save_event_spectrogram_uses_row_peak_and_file_absolute_time(tmp_path: Path):
+    cfg = DetectionConfig(use_noise_reduction=False)
+    wav = tmp_path / "R20241011-180923.WAV"
+    sr = cfg.sample_rate
+    duration_s = 6.0
+    n = int(sr * duration_s)
+    t = np.arange(n) / sr
+    audio = (0.01 * np.random.default_rng(2).standard_normal(n)).astype(np.float32)
+    tone = (t >= 2.20) & (t < 2.40)
+    audio[tone] += (0.4 * np.sin(2 * np.pi * 2713.0 * t[tone])).astype(np.float32)
+    sf.write(str(wav), audio, sr, subtype="PCM_16")
+    event = CallEvent(
+        start_s=2.276,
+        end_s=2.368,
+        peak_time_s=2.299,
+        peak_freq_hz=2713.2,
+        energy=1.0,
+        n_callers=1,
+    )
+    out = tmp_path / "event.png"
+    written = save_event_spectrogram(
+        wav, event, cfg, out, filename="R20241011-180923.WAV", event_n=1
+    )
+    assert written.path.is_file() and written.path.stat().st_size > 2000
+    assert written.kind == "event"
+    assert written.n_marked == 1
+    assert written.t0 == pytest.approx(2.276 - EVENT_CONTEXT_PAD_S, abs=0.05)
+    assert written.t0 + written.duration_s > 2.368
+    # Context of a few seconds, not the 0.09 s call sliver.
+    assert written.duration_s > 2.0

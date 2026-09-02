@@ -20,7 +20,38 @@ export function asDetectionReport(value: unknown): DetectionReport {
   if (!isReport(value)) {
     throw new Error('O relatório JSON está em um formato inesperado.')
   }
-  return value
+  return sampleEventsForDashboard(value)
+}
+
+const DASHBOARD_EVENTS_PER_FILE = 20
+
+/** Keep the Events table at a few hundred/thousand rows; the Excel has every event. */
+export function sampleEventsForDashboard(report: DetectionReport): DetectionReport {
+  if (report.events_sample) return report
+  if (report.events.length <= DASHBOARD_EVENTS_PER_FILE * Math.max(1, report.files.length)) {
+    return report
+  }
+  const buckets = new Map<string, DetectionReport['events']>()
+  for (const event of report.events) {
+    const bucket = buckets.get(event.file) ?? []
+    if (bucket.length < DASHBOARD_EVENTS_PER_FILE) {
+      bucket.push(event)
+      buckets.set(event.file, bucket)
+    }
+  }
+  const sampled: DetectionReport['events'] = []
+  for (const file of report.files) {
+    sampled.push(...(buckets.get(file.file) ?? []))
+  }
+  return {
+    ...report,
+    events: sampled,
+    events_sample: {
+      per_file: DASHBOARD_EVENTS_PER_FILE,
+      n_shown: sampled.length,
+      n_total: report.summary.n_events,
+    },
+  }
 }
 
 export function liveSpectrogramUrl(filename: string): string {
@@ -47,7 +78,7 @@ export async function loadReport(): Promise<LoadedReport> {
       const report = (await response.json()) as DetectionReport
       if (isReport(report) && report.files.length > 0) {
         return {
-          report,
+          report: sampleEventsForDashboard(report),
           source: 'live',
           spectrogramUrl: (filename) => `/api/spectrograms/${encodeURIComponent(filename)}`,
         }
@@ -67,7 +98,7 @@ export async function loadReport(): Promise<LoadedReport> {
   }
   const source = inferReportSource(report, 'campo')
   return {
-    report,
+    report: sampleEventsForDashboard(report),
     source,
     spectrogramUrl: (filename) => `/campo/${encodeURIComponent(filename)}`,
   }
@@ -81,7 +112,7 @@ export async function loadReportFromFile(file: File): Promise<LoadedReport> {
   }
   const source = inferReportSource(report, 'demo')
   return {
-    report,
+    report: sampleEventsForDashboard(report),
     source,
     spectrogramUrl: (filename) =>
       source === 'campo' ? `/campo/${encodeURIComponent(filename)}` : `/demo/${encodeURIComponent(filename)}`,

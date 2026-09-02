@@ -1,6 +1,8 @@
 """Tiny HTTP API so the React dashboard can read pipeline output and upload audio.
 
-Serves the JSON report and spectrogram PNGs from ``output/``. Run with:
+Serves the JSON report and spectrogram PNGs from ``output/``. Per-event
+spectrograms are generated on demand from local field/upload audio
+(``GET /api/event-spectrogram``). Run with:
 
     PYTHONPATH=src python -m bioacoustics.api
 """
@@ -8,6 +10,7 @@ Serves the JSON report and spectrogram PNGs from ``output/``. Run with:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import tempfile
 import threading
@@ -15,18 +18,29 @@ import traceback
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import BinaryIO
-from urllib.parse import unquote, urlparse
+from typing import BinaryIO, Sequence
+from urllib.parse import parse_qs, unquote, urlparse
 
+from .audio_io import audio_duration_s
 from .config import AUDIO_EXTENSIONS, DetectionConfig
 from .pipeline import process_file
 from .report import write_json_report, write_report
-from .visualization import save_file_spectrograms
+from .visualization import (
+    EVENT_CONTEXT_PAD_S,
+    event_context_window,
+    save_event_spectrogram,
+    save_file_spectrograms,
+)
 
 DEFAULT_OUTPUT = Path("output")
 DEFAULT_UPLOAD_DIR = Path("data/uploads")
+DEFAULT_FIELD_DIR = Path("data/field")
 JSON_NAME = "resultado.json"
 XLSX_NAME = "resultado.xlsx"
+EVENT_SPEC_DIR = "event_spectrograms"
+AUDIO_MISSING_MESSAGE = "áudio deste ficheiro não está nesta máquina"
+MAX_EVENT_TIME_S = 48 * 3600.0
+_SPEC_LOCK = threading.Lock()
 
 # Same extensions as ``DetectionConfig`` / the CLI. Easy to change.
 ALLOWED_EXTENSIONS = AUDIO_EXTENSIONS
@@ -39,6 +53,177 @@ FILE_FIELD_NAMES = frozenset({"files", "file"})
 _MAX_HEADER_BYTES = 64 * 1024
 
 _ANALYZE_LOCK = threading.Lock()
+
+
+@dataclass(frozen=True)
+class EventSpectrogramRequest:
+    filename: str
+    start_s: float
+    end_s: float
+    peak_time_s: float
+    peak_freq_hz: float
+    n_callers: int | None = None
+    event: int | None = None
+
+
+def _safe_audio_basename(name: str) -> str:
+    """Basename only; reject path fragments."""
+    raw = str(name).strip()
+    if not raw or raw in {".", ".."}:
+        raise AnalyzeError("file is required")
+    if "/" in raw.replace("\\", "/") or ".." in Path(raw).parts:
+        raise AnalyzeError("file must be a basename, not a path")
+    base = Path(raw.replace("\\", "/")).name
+    if not base or base in {".", ".."}:
+        raise AnalyzeError("file is required")
+    ext = Path(base).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        allowed = ", ".join(ALLOWED_EXTENSIONS)
+        raise AnalyzeError(f"unsupported file type: {ext or '(none)'} (allowed: {allowed})")
+    return base
+
+
+def _query_one(query: dict[str, list[str]], key: str) -> str | None:
+    values = query.get(key) or query.get(key + "[]")
+    if not values:
+        return None
+    value = values[0].strip()
+    return value if value else None
+
+
+def _query_float(query: dict[str, list[str]], key: str, *, required: bool = True) -> float | None:
+    raw = _query_one(query, key)
+    if raw is None:
+        if required:
+            raise AnalyzeError(f"missing parameter: {key}")
+        return None
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise AnalyzeError(f"invalid {key}") from exc
+    if value != value or value in (float("inf"), float("-inf")):  # NaN / Inf
+        raise AnalyzeError(f"invalid {key}")
+    return value
+
+
+def _query_int(query: dict[str, list[str]], key: str) -> int | None:
+    raw = _query_one(query, key)
+    if raw is None:
+        return None
+    try:
+        value = int(raw, 10)
+    except ValueError as exc:
+        raise AnalyzeError(f"invalid {key}") from exc
+    if value < 1:
+        raise AnalyzeError(f"invalid {key}")
+    return value
+
+
+def parse_event_spectrogram_request(query: dict[str, list[str]]) -> EventSpectrogramRequest:
+    """Validate GET /api/event-spectrogram query params (table-row values)."""
+    filename_raw = _query_one(query, "file")
+    if not filename_raw:
+        raise AnalyzeError("missing parameter: file")
+    filename = _safe_audio_basename(filename_raw)
+    start_s = _query_float(query, "start_s")
+    end_s = _query_float(query, "end_s")
+    peak_time_s = _query_float(query, "peak_time_s")
+    peak_freq_hz = _query_float(query, "peak_freq_hz")
+    assert start_s is not None and end_s is not None
+    assert peak_time_s is not None and peak_freq_hz is not None
+    if start_s < 0 or end_s < 0 or peak_time_s < 0:
+        raise AnalyzeError("times must be >= 0")
+    if end_s < start_s:
+        raise AnalyzeError("end_s must be >= start_s")
+    if max(start_s, end_s, peak_time_s) > MAX_EVENT_TIME_S:
+        raise AnalyzeError("time out of range")
+    if not (1.0 <= peak_freq_hz <= 20_000.0):
+        raise AnalyzeError("peak_freq_hz out of range")
+    return EventSpectrogramRequest(
+        filename=filename,
+        start_s=start_s,
+        end_s=end_s,
+        peak_time_s=peak_time_s,
+        peak_freq_hz=peak_freq_hz,
+        n_callers=_query_int(query, "n_callers"),
+        event=_query_int(query, "event"),
+    )
+
+
+def find_audio_by_basename(filename: str, roots: Sequence[Path]) -> Path | None:
+    """Locate ``filename`` under field / output / uploads (rglob, case-insensitive)."""
+    wanted = filename.lower()
+    for root in roots:
+        root = Path(root)
+        if not root.exists():
+            continue
+        direct = root / filename
+        if direct.is_file():
+            return direct
+        try:
+            for path in root.rglob("*"):
+                if EVENT_SPEC_DIR in path.parts:
+                    continue
+                if path.is_file() and path.name.lower() == wanted:
+                    return path
+        except OSError:
+            continue
+    return None
+
+
+def event_spectrogram_cache_path(output_dir: Path, req: EventSpectrogramRequest) -> Path:
+    key = (
+        f"{req.filename}|{req.start_s:.6f}|{req.end_s:.6f}|"
+        f"{req.peak_time_s:.6f}|{req.peak_freq_hz:.3f}|"
+        f"{req.n_callers}|{req.event}|{EVENT_CONTEXT_PAD_S}"
+    )
+    digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:20]
+    stem = Path(req.filename).stem[:40]
+    return Path(output_dir) / EVENT_SPEC_DIR / f"{stem}_{digest}.png"
+
+
+def render_event_spectrogram(
+    req: EventSpectrogramRequest,
+    audio_path: Path,
+    cache_path: Path,
+    cfg: DetectionConfig | None = None,
+) -> tuple[Path, float, float]:
+    """Write (or reuse) the PNG for this table row. Returns path, t0, duration."""
+    if cache_path.is_file() and cache_path.stat().st_size > 0:
+        duration_s = audio_duration_s(audio_path)
+        t0, win = event_context_window(
+            req.start_s, req.end_s, duration_s, peak_time_s=req.peak_time_s
+        )
+        return cache_path, t0, win
+
+    cfg = cfg or DetectionConfig()
+    event = {
+        "start_s": req.start_s,
+        "end_s": req.end_s,
+        "peak_time_s": req.peak_time_s,
+        "peak_freq_hz": req.peak_freq_hz,
+        "energy": 1.0,
+        "n_callers": req.n_callers if req.n_callers is not None else 1,
+    }
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = cache_path.with_suffix(".tmp.png")
+    with _SPEC_LOCK:
+        if cache_path.is_file() and cache_path.stat().st_size > 0:
+            duration_s = audio_duration_s(audio_path)
+            t0, win = event_context_window(
+                req.start_s, req.end_s, duration_s, peak_time_s=req.peak_time_s
+            )
+            return cache_path, t0, win
+        written = save_event_spectrogram(
+            audio_path,
+            event,
+            cfg,
+            tmp_path,
+            filename=req.filename,
+            event_n=req.event,
+        )
+        tmp_path.replace(cache_path)
+    return cache_path, written.t0, written.duration_s
 
 
 class AnalyzeError(Exception):
@@ -356,22 +541,38 @@ def run_pipeline_on_uploads(uploads: list[SavedUpload], output_dir: Path) -> dic
     return json.loads(json_path.read_text(encoding="utf-8"))
 
 
-def make_handler(output_dir: Path, upload_dir: Path | None = None):
+def make_handler(
+    output_dir: Path,
+    upload_dir: Path | None = None,
+    field_dir: Path | None = None,
+):
     output_dir = output_dir.resolve()
     upload_dir = (upload_dir or DEFAULT_UPLOAD_DIR).resolve()
+    field_dir = (field_dir or DEFAULT_FIELD_DIR).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     upload_dir.mkdir(parents=True, exist_ok=True)
+    audio_roots = (field_dir, output_dir, upload_dir)
 
     class DashboardHandler(BaseHTTPRequestHandler):
         def log_message(self, format: str, *args) -> None:  # noqa: A003
             print(f"[api] {self.address_string()} {format % args}")
 
-        def _send(self, status: int, body: bytes, content_type: str) -> None:
+        def _send(
+            self,
+            status: int,
+            body: bytes,
+            content_type: str,
+            extra: dict[str, str] | None = None,
+        ) -> None:
             self.send_response(status)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-store")
+            headers = {"Cache-Control": "no-store"}
+            if extra:
+                headers.update(extra)
+            for key, value in headers.items():
+                self.send_header(key, value)
             self.end_headers()
             self.wfile.write(body)
 
@@ -383,7 +584,9 @@ def make_handler(output_dir: Path, upload_dir: Path | None = None):
             self.end_headers()
 
         def do_GET(self) -> None:  # noqa: N802
-            path = unquote(urlparse(self.path).path)
+            parsed = urlparse(self.path)
+            path = unquote(parsed.path)
+            query = parse_qs(parsed.query)
             if path in {"/api/report", "/api/report/"}:
                 report = output_dir / JSON_NAME
                 if not report.exists():
@@ -393,6 +596,10 @@ def make_handler(output_dir: Path, upload_dir: Path | None = None):
                     ))
                     return
                 self._send(200, report.read_bytes(), "application/json; charset=utf-8")
+                return
+
+            if path in {"/api/event-spectrogram", "/api/event-spectrogram/"}:
+                self._handle_event_spectrogram(query)
                 return
 
             if path.startswith("/api/spectrograms/"):
@@ -416,6 +623,43 @@ def make_handler(output_dir: Path, upload_dir: Path | None = None):
                 return
 
             self._send(*_json_bytes({"error": "not found"}, 404))
+
+        def _handle_event_spectrogram(self, query: dict[str, list[str]]) -> None:
+            try:
+                req = parse_event_spectrogram_request(query)
+            except AnalyzeError as exc:
+                self._send(*_json_bytes({"error": str(exc)}, exc.status))
+                return
+            audio_path = find_audio_by_basename(req.filename, audio_roots)
+            if audio_path is None:
+                self._send(*_json_bytes(
+                    {
+                        "error": AUDIO_MISSING_MESSAGE,
+                        "code": "audio_not_found",
+                    },
+                    404,
+                ))
+                return
+            cache_path = event_spectrogram_cache_path(output_dir, req)
+            try:
+                png, t0, duration_s = render_event_spectrogram(req, audio_path, cache_path)
+                body = png.read_bytes()
+            except ValueError as exc:
+                self._send(*_json_bytes({"error": str(exc)}, 400))
+                return
+            except Exception as exc:
+                traceback.print_exc()
+                self._send(*_json_bytes({"error": f"spectrogram failed: {exc}"}, 500))
+                return
+            extra = {
+                "Cache-Control": "private, max-age=300",
+                "X-Peak-Time-S": f"{req.peak_time_s:.6f}",
+                "X-Peak-Freq-Hz": f"{req.peak_freq_hz:.3f}",
+                "X-Window-Start-S": f"{t0:.6f}",
+                "X-Window-Duration-S": f"{duration_s:.6f}",
+                "X-Event-File": req.filename,
+            }
+            self._send(200, body, "image/png", extra)
 
         def do_POST(self) -> None:  # noqa: N802
             path = unquote(urlparse(self.path).path)
@@ -467,18 +711,21 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Serve detection reports for the dashboard.")
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT))
     parser.add_argument("--upload-dir", default=str(DEFAULT_UPLOAD_DIR))
+    parser.add_argument("--field-dir", default=str(DEFAULT_FIELD_DIR))
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
     upload_dir = Path(args.upload_dir)
+    field_dir = Path(args.field_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     upload_dir.mkdir(parents=True, exist_ok=True)
-    server = ThreadingHTTPServer((args.host, args.port), make_handler(output_dir, upload_dir))
+    server = ThreadingHTTPServer((args.host, args.port), make_handler(output_dir, upload_dir, field_dir))
     print(f"Dashboard API at http://{args.host}:{args.port}/api/report")
     print(f"Upload/analyze at http://{args.host}:{args.port}/api/analyze")
-    print(f"Reading outputs from {output_dir}")
+    print(f"Event spectrogram at http://{args.host}:{args.port}/api/event-spectrogram")
+    print(f"Reading outputs from {output_dir}; field audio from {field_dir}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
