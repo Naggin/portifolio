@@ -120,7 +120,10 @@ export default function App() {
         <h1 className="mt-1 text-2xl font-medium text-ink">Detecção de vocalizações</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted">
           Envie gravações de <em>Sphaenorhynchus caramaschii</em> (perereca-de-banhado). A contagem
-          usa o espectrograma numérico; a imagem serve só para conferência.
+          usa o espectrograma numérico; a imagem serve só para conferência.{' '}
+          <a href="/espectrogramas/" className="text-accent hover:underline">
+            Espectrogramas de validação (madrugada 30:45)
+          </a>
         </p>
       </header>
 
