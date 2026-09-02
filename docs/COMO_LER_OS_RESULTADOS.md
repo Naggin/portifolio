@@ -9,7 +9,7 @@ entre planilha e gráfico: a aluna fica com os dois.
 | **Excel completo** | `output/resultado.xlsx` | Lista local de **todos** os eventos (~7 MB, gitignored) |
 | **Painel web** | `web/` lê `GET /api/report` (`resultado.json`) | Gráficos e tabelas no navegador |
 | **JSON** | `output/resultado.json` | Mesmo conteúdo do painel; arquivo intermediário |
-| **PNG** | `output/<nome>_spectrogram.png` e, sob pedido, `output/event_spectrograms/` | Conferência humana. Arquivo longo: janela com picos. Por evento: painel Eventos → Ver espectrograma (não vai para o Git). Tese: aba `Espectrogramas`. |
+| **PNG** | `output/<nome>_spectrogram.png` e, sob pedido, `output/event_spectrograms/` | Conferência humana. Arquivo longo: janela com picos. Por arquivo: painel Arquivos → Ver PNG (sob pedido se o lote usou `--no-spectrogram`). Por evento: painel Eventos → Ver espectrograma. Tese: aba `Espectrogramas`. |
 
 O ficheiro para enviar e abrir na tese é
 `reports/relatorio_provisorio.xlsx` (versionado; regenerar com
@@ -169,7 +169,8 @@ O que aparece:
 
 - cartões: arquivos, eventos, máximo simultâneo, duração total;
 - gráficos de barras por hora e por mês (Recharts);
-- tabela de arquivos (espectrograma PNG só se o lote tiver gerado as imagens);
+- tabela de arquivos (**Ver PNG** gera sob pedido quando a API está no ar; coluna oculta
+  só no JSON estático de campo sem API);
 - tabela de eventos, filtrável por nome de arquivo (amostra no JSON do painel);
   cada linha tem **Ver espectrograma** (sob pedido, áudio local).
 
@@ -178,12 +179,14 @@ Se a API estiver fora, o painel cai no lote de campo em
 eventos é uma amostra; o Excel tem todos. Há também “Abrir resultado.json”
 para carregar um JSON baixado à mão.
 
-Neste lote (`--no-spectrogram`) o painel **não** pede PNG por arquivo — a
-coluna de espectrograma na tabela de arquivos fica oculta. **Por evento**, o
-botão *Ver espectrograma* pede `GET /api/event-spectrogram` e desenha só aquela
-captura (com o Pico da linha). Sem o WAV nesta máquina, a API responde que o
-áudio não está disponível. Upload pela API gera PNG de arquivo inteiro num lote
-novo.
+Neste lote (`--no-spectrogram`) o JSON estático em `web/public/campo/` **não**
+expõe a coluna de espectrograma por arquivo. Com a **API local** e o WAV em
+`data/field/`, **Ver PNG** na tabela Arquivos gera
+`GET /api/spectrograms/{stem}_spectrogram.png` sob pedido (janela de 60 s mais
+densa, picos marcados). **Por evento**, o botão *Ver espectrograma* pede
+`GET /api/event-spectrogram` e desenha só aquela captura (com o Pico da linha).
+Sem o WAV nesta máquina, a API responde que o áudio não está disponível. Upload
+pela API gera PNG de arquivo inteiro num lote novo.
 
 Upload pelo painel (`POST /api/analyze`) é para poucos arquivos curtos (máx.
 10, 2 GB cada) e **gera PNG**. Não substitua o lote CLI de 75 arquivos por
@@ -217,6 +220,17 @@ O painel avisa quando um upload não parece `R20241011-180923.WAV`.
 `src/bioacoustics/visualization.py`: duas faixas (espectrograma + energia da
 banda), marcas nos eventos, linhas da banda e do limiar. **Não entra na
 contagem.**
+
+### Espectrograma por arquivo (tabela Arquivos do painel)
+
+Sob pedido quando o PNG ainda não existe (lote com `--no-spectrogram`): Arquivos →
+**Ver PNG**. A API (`GET /api/spectrograms/{stem}_spectrogram.png`) localiza o
+WAV em `data/field/` (ou uploads), lê os eventos desse arquivo em
+`output/resultado.json` e desenha a **janela de 60 s com mais picos** (ou o
+ficheiro inteiro se for curto), com os picos marcados — a mesma lógica do
+pipeline. O PNG fica em cache em `output/` (gitignored). A primeira chamada
+pode demorar em gravações de 1 h; as seguintes servem o ficheiro em cache.
+Sem o áudio nesta máquina, a resposta indica que o áudio não está disponível.
 
 ### Espectrograma por evento (tabela Eventos do painel)
 
